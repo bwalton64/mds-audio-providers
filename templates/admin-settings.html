@@ -1,0 +1,17 @@
+{{nonce_field}}
+<table class="form-table">
+	<tr>
+		<th><label for="bandcamp_shortcode">{{label}}</label></th>
+		<td>
+			<input
+				type="text"
+				id="bandcamp_shortcode"
+				name="bandcamp_shortcode"
+				value="{{shortcode}}"
+				class="regular-text mds-bandcamp-shortcode-input"
+				{{disabled}}
+			/>
+			<p class="description {{description_class}}">{{description}}</p>
+		</td>
+	</tr>
+</table>
