@@ -1,13 +1,12 @@
 <?php
-
 /**
  * Frontend hook callbacks for the MDS Bandcamp Integration plugin.
  *
  * @package MDS_Bandcamp_Integration
  */
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
 /**
@@ -16,9 +15,8 @@ if (!defined('ABSPATH')) {
  * @param int $post_id Post ID.
  * @return void
  */
-function mds_bandcamp_frontend_render($post_id): void
-{
-    MdsBandcampFrontend::render($post_id);
+function mds_bandcamp_frontend_render( $post_id ): void {
+	MDS_Bandcamp_Frontend::render( $post_id );
 }
 
-add_action('mds_rm_after_release_meta', 'mds_bandcamp_frontend_render');
+add_action( 'mds_rm_after_release_meta', 'mds_bandcamp_frontend_render' );

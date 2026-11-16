@@ -1,13 +1,12 @@
 <?php
-
 /**
  * Public dependency helpers for the MDS Bandcamp Integration plugin.
  *
  * @package MDS_Bandcamp_Integration
  */
 
-if (!defined('ABSPATH')) {
-    exit;
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
 /**
@@ -15,9 +14,8 @@ if (!defined('ABSPATH')) {
  *
  * @return bool
  */
-function mds_bandcamp_is_mds_active(): bool
-{
-    return MdsBandcampDependencies::isMdsActive();
+function mds_bandcamp_is_mds_active(): bool {
+	return MDS_Bandcamp_Dependencies::is_mds_active();
 }
 
 /**
@@ -25,7 +23,6 @@ function mds_bandcamp_is_mds_active(): bool
  *
  * @return bool
  */
-function mds_bandcamp_is_bandcamp_active(): bool
-{
-    return MdsBandcampDependencies::isBandcampActive();
+function mds_bandcamp_is_bandcamp_active(): bool {
+	return MDS_Bandcamp_Dependencies::is_bandcamp_active();
 }
