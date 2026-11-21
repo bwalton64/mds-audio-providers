@@ -12,10 +12,20 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Loads plugin templates and returns their rendered output.
  *
+ * Theme templates in `mds-bandcamp-integration/` are resolved by WordPress
+ * through the child theme first, then the parent theme, before plugin fallback.
+ *
  * @since 1.0.0
  */
 final class MDS_Bandcamp_Templates
 {
+	/**
+	 * Render a theme-overridable or bundled plugin template.
+	 *
+	 * @param string $template_name PHP template filename.
+	 * @param array  $args          Variables to extract for the template.
+	 * @return string Rendered template output, or an empty string on failure.
+	 */
 	public static function render( $template_name, $args = array() ): string
 	{
 		if ( ! is_string( $template_name ) || basename( $template_name ) !== $template_name || '.php' !== strtolower( substr( $template_name, -4 ) ) ) {
@@ -28,8 +38,14 @@ final class MDS_Bandcamp_Templates
 			return '';
 		}
 
-		$theme_template = locate_template( 'mds-bandcamp-integration/' . $template_name );
-		$template_path  = $theme_template ? $theme_template : MDS_BANDCAMP_PATH . 'templates/' . $template_name;
+		$is_admin_view = 'admin-settings.php' === $template_name;
+		$theme_template = $is_admin_view
+			? ''
+			: locate_template( 'mds-bandcamp-integration/' . $template_name );
+		$default_template_directory = $is_admin_view ? 'includes/admin/views/' : 'templates/';
+		$template_path = $theme_template
+			? $theme_template
+			: MDS_BANDCAMP_PATH . $default_template_directory . $template_name;
 
 		if ( ! is_readable( $template_path ) ) {
 			_doing_it_wrong(

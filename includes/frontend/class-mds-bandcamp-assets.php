@@ -15,12 +15,23 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 1.0.0
  */
 final class MDS_Bandcamp_Assets {
+	/**
+	 * Register asset hooks.
+	 *
+	 * @return void
+	 */
 	public static function register_hooks(): void {
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue_admin_styles' ) );
 		add_action( 'enqueue_block_editor_assets', array( self::class, 'enqueue_block_styles' ) );
 		add_action( 'wp_enqueue_scripts', array( self::class, 'enqueue_frontend_assets' ) );
 	}
 
+	/**
+	 * Enqueue shared admin styles and release-editor styles when applicable.
+	 *
+	 * @param string $hook_suffix Current admin page hook.
+	 * @return void
+	 */
 	public static function enqueue_admin_styles( string $hook_suffix ): void {
 		wp_enqueue_style( 'mds-bandcamp-blocks', MDS_BANDCAMP_PLUGIN_URL . '/css/blocks.css', array(), MDS_BANDCAMP_PLUGIN_VERSION );
 
@@ -36,10 +47,20 @@ final class MDS_Bandcamp_Assets {
 		wp_enqueue_style( 'mds-bandcamp-admin', MDS_BANDCAMP_URL . 'css/admin.css', array(), filemtime( MDS_BANDCAMP_PATH . 'css/admin.css' ) );
 	}
 
+	/**
+	 * Enqueue shared styles in the block editor.
+	 *
+	 * @return void
+	 */
 	public static function enqueue_block_styles(): void {
 		wp_enqueue_style( 'mds-bandcamp-blocks', MDS_BANDCAMP_PLUGIN_URL . '/css/blocks.css', array(), MDS_BANDCAMP_PLUGIN_VERSION );
 	}
 
+	/**
+	 * Enqueue frontend styles and shared block behavior when needed.
+	 *
+	 * @return void
+	 */
 	public static function enqueue_frontend_assets(): void {
 		if ( is_singular( 'release' ) && MDS_BANDCAMP_Dependencies::is_mds_active() && MDS_BANDCAMP_Dependencies::is_bandcamp_active() ) {
 			wp_enqueue_style( 'mds-bandcamp-public', MDS_BANDCAMP_URL . 'css/public.css', array(), filemtime( MDS_BANDCAMP_PATH . 'css/public.css' ) );

@@ -15,12 +15,23 @@ if ( ! defined( 'ABSPATH' ) ) {
  * @since 1.0.0
  */
 final class MDS_Bandcamp_Block_Migration {
+	/**
+	 * Register migration hooks.
+	 *
+	 * @return void
+	 */
 	public static function register_hooks(): void {
 		add_action( 'admin_init', array( self::class, 'run' ) );
 		add_action( 'admin_notices', array( self::class, 'show_standalone_plugin_notice' ) );
 		add_filter( 'render_block_data', array( self::class, 'prepare_legacy_block' ) );
 	}
 
+	/**
+	 * Prepare a parsed block for rendering, including legacy namespaces.
+	 *
+	 * @param array $parsed_block Parsed block structure.
+	 * @return array Block structure with legacy names converted.
+	 */
 	public static function prepare_legacy_block( array $parsed_block ): array {
 		if (
 			isset( $parsed_block['blockName'] )
@@ -30,6 +41,9 @@ final class MDS_Bandcamp_Block_Migration {
 			$parsed_block['blockName'] = 'mds-bandcamp/' . substr( $parsed_block['blockName'], strlen( 'blocks-for-bandcamp/' ) );
 			if ( ! is_admin() ) {
 				wp_enqueue_style( 'mds-bandcamp-blocks', MDS_BANDCAMP_PLUGIN_URL . '/css/blocks.css', array(), MDS_BANDCAMP_PLUGIN_VERSION );
+				if ( in_array( $parsed_block['blockName'], array( 'mds-bandcamp/bandcamp-album', 'mds-bandcamp/bandcamp-merch' ), true ) ) {
+					wp_enqueue_script( 'mds-bandcamp-blocks', MDS_BANDCAMP_URL . 'js/blocks.js', array(), MDS_BANDCAMP_PLUGIN_VERSION, true );
+				}
 			}
 		}
 
@@ -40,12 +54,22 @@ final class MDS_Bandcamp_Block_Migration {
 		return $parsed_block;
 	}
 
+	/**
+	 * Run settings, block-content, and standalone-plugin migrations.
+	 *
+	 * @return void
+	 */
 	public static function run(): void {
 		self::migrate_settings();
 		self::migrate_block_content();
 		self::deactivate_standalone_plugin();
 	}
 
+	/**
+	 * Copy settings from the standalone plugin when no current setting exists.
+	 *
+	 * @return void
+	 */
 	private static function migrate_settings(): void {
 		$target = get_option( 'mds_bandcamp__settings', null );
 		$source = get_option( 'gf_blocks_for_bandcamp__settings', null );
@@ -54,6 +78,11 @@ final class MDS_Bandcamp_Block_Migration {
 		}
 	}
 
+	/**
+	 * Deactivate the standalone Blocks for Bandcamp plugin if it is active.
+	 *
+	 * @return void
+	 */
 	private static function deactivate_standalone_plugin(): void {
 		if ( ! current_user_can( 'activate_plugins' ) ) {
 			return;
@@ -76,6 +105,11 @@ final class MDS_Bandcamp_Block_Migration {
 		}
 	}
 
+	/**
+	 * Display the one-time standalone-plugin deactivation notice.
+	 *
+	 * @return void
+	 */
 	public static function show_standalone_plugin_notice(): void {
 		if ( ! get_transient( 'mds_bandcamp_standalone_plugin_deactivated' ) ) {
 			return;
@@ -86,6 +120,11 @@ final class MDS_Bandcamp_Block_Migration {
 			'</p></div>';
 	}
 
+	/**
+	 * Migrate saved block namespaces in bounded batches.
+	 *
+	 * @return void
+	 */
 	private static function migrate_block_content(): void {
 		if ( get_option( 'mds_bandcamp_block_namespace_migrated' ) ) {
 			return;

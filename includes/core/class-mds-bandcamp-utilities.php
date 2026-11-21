@@ -56,7 +56,9 @@ final class MDS_Bandcamp_Utilities
         $styles = '';
 
         if ( empty( $atts['album'] ) && empty( $atts['track'] ) ) {
-            return '<p><strong>Error:</strong> Missing <code>album</code> or <code>track</code> ID in Bandcamp shortcode.</p>';
+            return '<p><strong>' . esc_html__( 'Error:', 'mds-bandcamp-integration' ) . '</strong> ' .
+                esc_html__( 'Missing album or track ID in Bandcamp shortcode.', 'mds-bandcamp-integration' ) .
+                '</p>';
         }
 
         // Start building the embedded URL.
@@ -91,7 +93,7 @@ final class MDS_Bandcamp_Utilities
         $src .= '/' . implode( '/', $params ) . '/';
 
         // Add an optional fallback link.
-        $fallback = '<a href="https://bandcamp.com">Listen on Bandcamp</a>';
+        $fallback = '<a href="' . esc_url( 'https://bandcamp.com' ) . '">' . esc_html__( 'Listen on Bandcamp', 'mds-bandcamp-integration' ) . '</a>';
 
         if ( false === strpos( $atts['width'], '%' ) ) {
             $atts['width'] .= 'px';

@@ -23,7 +23,7 @@ final class MDS_Bandcamp_Cache
      * @since 1.0.0
      * @var string
      */
-    private static $plugin_key = 'mds_bandcamp';
+    private static string $plugin_key = 'mds_bandcamp';
 
     /**
      * Register cache management hooks.
@@ -122,7 +122,7 @@ final class MDS_Bandcamp_Cache
     public static function handle_clear_cache(): void
     {
         if ( ! current_user_can( 'manage_options' ) ) {
-            wp_die( 'Unauthorized user' );
+            wp_die( esc_html__( 'Unauthorized user', 'mds-bandcamp-integration' ) );
         }
 
         check_admin_referer( 'gf_clear_cache_action', 'gf_clear_cache_nonce' );
@@ -164,6 +164,8 @@ final class MDS_Bandcamp_Cache
         }
 
         delete_transient( 'gf_clear_cache_notice' );
-        wp_admin_notice( 'Cache cleared successfully!', array( 'type' => 'success', 'dismissible' => true ) );
+        echo '<div class="notice notice-success is-dismissible"><p>' .
+            esc_html__( 'Cache cleared successfully!', 'mds-bandcamp-integration' ) .
+            '</p></div>';
     }
 }

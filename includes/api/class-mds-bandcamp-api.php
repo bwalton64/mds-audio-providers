@@ -23,7 +23,7 @@ final class MDS_Bandcamp_API
      * @since 1.0.0
      * @var string
      */
-    private static $plugin_key = 'mds_bandcamp';
+    private static string $plugin_key = 'mds_bandcamp';
 
     /**
      * Retrieve and cache Bandcamp data.
@@ -223,7 +223,7 @@ final class MDS_Bandcamp_API
      * @param array $bandcamp_album_data Array of raw data from Bandcamp album.
      * @return array Array of formatted album data.
      */
-    private static function parse_album_data( $bandcamp_album_data ): array
+    private static function parse_album_data( array $bandcamp_album_data ): array
     {
         if ( empty( $bandcamp_album_data['data'] ) ) {
             return $bandcamp_album_data;
@@ -439,7 +439,7 @@ final class MDS_Bandcamp_API
      * @param string   $base  Base URL for relative URL conversion.
      * @return array Parsed release data.
      */
-    private static function parse_music_grid_item( DOMXPath $xpath, DOMNode $item, $base ): array
+    private static function parse_music_grid_item( DOMXPath $xpath, DOMNode $item, string $base ): array
     {
         $release = array(
             'image'  => '',
@@ -479,7 +479,7 @@ final class MDS_Bandcamp_API
      * @param string   $base  Base URL for relative URL conversion.
      * @return array Parsed release data.
      */
-    private static function parse_indexpage_item( DOMXPath $xpath, DOMNode $set, $html, $base ): array
+    private static function parse_indexpage_item( DOMXPath $xpath, DOMNode $set, string $html, string $base ): array
     {
         $release = array(
             'image'  => '',

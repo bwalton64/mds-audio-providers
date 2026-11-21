@@ -22,7 +22,7 @@ final class MDS_Bandcamp_Blocks
      * @since 1.0.0
      * @var array
      */
-    private static $plugin_data = array(
+    private static array $plugin_data = array(
         'key' => 'mds_bandcamp',
     );
 
