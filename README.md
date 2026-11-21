@@ -22,6 +22,16 @@ admin settings, REST metadata support, and MDS Release Manager integration.
 
 Legacy `blocks-for-bandcamp/*` content is migrated and remains renderable.
 
+## Release Manager integration
+
+With MDS Release Manager active, the release editor's Bandcamp meta box saves a
+verified album URL and ID as `mds_bandcamp_integration` post meta. On the
+frontend, the plugin supplies the small album player to the Release Links block
+through the `mds_rm_release_links_audio_html` filter, rendered via the
+theme-overridable `frontend-widget.php` template. The Release Pages Player
+setting (default enabled) on the plugin settings page or the Bandcamp tab under
+Releases → Settings turns this player off.
+
 ## Class Layout
 
 Production classes use the `MDS_Bandcamp_` prefix and are grouped by function:
@@ -97,6 +107,7 @@ php tests/native-api.php
 php tests/block-metadata.php
 php tests/block-migration.php
 php tests/templates.php
+php tests/release-links-player.php
 ```
 
 Run PHP syntax checks across the plugin:

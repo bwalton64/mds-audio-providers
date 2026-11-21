@@ -56,7 +56,7 @@ $expected = array(
     array( 'action', 'admin_init', array( 'MDS_Bandcamp_Admin_Interface', 'register_settings' ), 10, 1 ),
     array( 'action', 'admin_menu', array( 'MDS_Bandcamp_Admin_Interface', 'add_settings_menu' ), 10, 1 ),
     array( 'filter', 'mds_rm_site_settings_tabs', array( 'MDS_Bandcamp_Admin_Interface', 'register_release_manager_tab' ), 10, 1 ),
-    array( 'action', 'mds_rm_after_release_meta', array( 'MDS_Bandcamp_Frontend', 'render' ), 10, 1 ),
+    array( 'filter', 'mds_rm_release_links_audio_html', array( 'MDS_Bandcamp_Frontend', 'filter_release_links_audio' ), 10, 3 ),
     array( 'action', 'admin_enqueue_scripts', array( 'MDS_Bandcamp_Assets', 'enqueue_admin_styles' ), 10, 1 ),
     array( 'action', 'enqueue_block_editor_assets', array( 'MDS_Bandcamp_Assets', 'enqueue_block_styles' ), 10, 1 ),
     array( 'action', 'wp_enqueue_scripts', array( 'MDS_Bandcamp_Assets', 'enqueue_frontend_assets' ), 10, 1 ),

@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Renders the Bandcamp player after release metadata.
+ * Supplies the Bandcamp player to the Release Links block audio slot.
  *
  * @since 1.0.0
  */
@@ -24,36 +24,70 @@ final class MDS_Bandcamp_Frontend
      */
     public static function register_hooks(): void
     {
-        add_action( 'mds_rm_after_release_meta', array( self::class, 'render' ) );
+        add_filter( 'mds_rm_release_links_audio_html', array( self::class, 'filter_release_links_audio' ), 10, 3 );
     }
 
     /**
-     * Render the Bandcamp player on the frontend.
+     * Supply the Bandcamp album player for the Release Links block.
      *
-     * @since 1.0.0
-     * @param int $post_id Post ID.
-     * @return void
+     * Runs on the Release Manager `mds_rm_release_links_audio_html` filter.
+     * Earlier non-empty markup from another extension is preserved. The
+     * player renders through the theme-overridable frontend-widget template
+     * when the release has a saved Bandcamp album and the release-page
+     * player setting is enabled.
+     *
+     * @since 1.1.0
+     *
+     * @param string $html       Audio markup supplied by an earlier filter.
+     * @param int    $post_id    Release post ID.
+     * @param array  $attributes Release Links block attributes (unused).
+     * @return string Player markup, or the incoming markup when unavailable.
      */
-    public static function render( $post_id ): void
+    public static function filter_release_links_audio( $html, $post_id, $attributes = array() ): string
     {
-        if ( ! MDS_Bandcamp_Dependencies::is_mds_active() || ! MDS_Bandcamp_Dependencies::is_bandcamp_active() ) {
-            return;
+        $html = is_string( $html ) ? $html : '';
+        if ( '' !== trim( $html ) || ! self::is_release_player_enabled() ) {
+            return $html;
         }
 
-        $shortcode = get_post_meta( $post_id, 'bandcamp_shortcode', true );
-        if ( empty( $shortcode ) ) {
-            return;
+        $album_id = MDS_Bandcamp_Helpers::get_album_id( (int) $post_id );
+        if ( $album_id <= 0 ) {
+            return $html;
         }
 
-        $shortcode_html = do_shortcode( $shortcode );
-
-        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The template sanitizes shortcode output with an iframe allowlist.
-        echo MDS_Bandcamp_Templates::render(
-            'frontend-widget.php',
+        $player = MDS_Bandcamp_Utilities::register_bandcamp_shortcode(
             array(
-                'shortcode_html' => $shortcode_html,
+                'album'   => (string) $album_id,
+                'height'  => '42',
+                'size'    => 'small',
+                'artwork' => 'none',
             )
         );
+
+        return MDS_Bandcamp_Templates::render(
+            'frontend-widget.php',
+            array(
+                'shortcode_html' => $player,
+            )
+        );
+    }
+
+    /**
+     * Check whether the release-page player setting is enabled.
+     *
+     * Defaults to enabled until the setting has been saved.
+     *
+     * @since 1.1.0
+     * @return bool Whether the Release Links player is enabled.
+     */
+    private static function is_release_player_enabled(): bool
+    {
+        $settings = get_option( 'mds_bandcamp__settings', array() );
+        if ( ! is_array( $settings ) || ! array_key_exists( 'release_player', $settings ) ) {
+            return true;
+        }
+
+        return ! empty( $settings['release_player'] );
     }
 
     /**

@@ -52,6 +52,15 @@ function settings_fields( $group )
     echo '<input name="option_page" value="' . $group . '">';
 }
 
+function checked( $checked, $current = true, $display = true )
+{
+    $result = (string) $checked === (string) $current ? " checked='checked'" : '';
+    if ( $display ) {
+        echo $result;
+    }
+    return $result;
+}
+
 function get_option( $name, $default = false )
 {
     return 'mds_bandcamp__settings' === $name ? array( 'transient' => 75 ) : $default;
@@ -213,8 +222,9 @@ if (
     throw new RuntimeException( 'Existing settings option was not registered.' );
 }
 if (
-    MDS_Bandcamp_Admin_Interface::sanitize_settings( array( 'transient' => 5000 ) ) !== array( 'transient' => 1440 )
-    || MDS_Bandcamp_Admin_Interface::sanitize_settings( array( 'transient' => 0 ) ) !== array( 'transient' => 1 )
+    MDS_Bandcamp_Admin_Interface::sanitize_settings( array( 'transient' => 5000 ) ) !== array( 'transient' => 1440, 'release_player' => false )
+    || MDS_Bandcamp_Admin_Interface::sanitize_settings( array( 'transient' => 0 ) ) !== array( 'transient' => 1, 'release_player' => false )
+    || MDS_Bandcamp_Admin_Interface::sanitize_settings( array( 'transient' => 60, 'release_player' => '1' ) ) !== array( 'transient' => 60, 'release_player' => true )
 ) {
     throw new RuntimeException( 'Settings sanitization bounds changed.' );
 }
@@ -225,6 +235,7 @@ if (
     'mds_bandcamp' !== $settings_group
     || false === strpos( $settings_html, 'https://example.test/wp-admin/options.php' )
     || false === strpos( $settings_html, 'name="mds_bandcamp__settings[transient]" value="75"' )
+    || false === strpos( $settings_html, 'name="mds_bandcamp__settings[release_player]" value="1" checked' )
 ) {
     throw new RuntimeException( 'Settings form did not preserve its option and value.' );
 }
