@@ -7,11 +7,7 @@
 	"description": "Embed an entire Bandcamp discography via URL",
 	"keywords": ["bandcamp","embed","releases","albums","discography"],
 	"category": "mds-release-manager",
-	"icon": {
-		"background": "#1da0c3", 
-		"foreground": "#ffffff",
-		"src": "album"
-	},
+	"icon": "album",
 	"supports": {
 		"html": false,
 		"anchor": true,

@@ -10,6 +10,8 @@
 
 ### Changed
 - Supply the Bandcamp player to the Release Links block through the Release Manager `mds_rm_release_links_audio_html` filter, rendering the migrated `mds_bandcamp_integration` album data through the theme-overridable frontend-widget template.
+- Use the Dashicons `album` icon for all six blocks in the editor inserter, matching the MDS Release Manager blocks.
+- Renamed the Releases → Settings extension tab from "Bandcamp" to "Bandcamp Integration".
 - Consolidated production classes into one class per file and updated bootstrap loading.
 - Grouped production classes and the release meta-box view by function while preserving theme template lookup and root asset URLs.
 - Updated plugin documentation and compatibility metadata for WordPress 6.3 and PHP 8.0.

@@ -109,7 +109,7 @@ final class MDS_Bandcamp_Admin_Interface {
 	 */
 	public static function register_release_manager_tab( array $tabs ): array {
 		$tabs['bandcamp'] = array(
-			'label'  => __( 'Bandcamp', 'mds-bandcamp-integration' ),
+			'label'  => __( 'Bandcamp Integration', 'mds-bandcamp-integration' ),
 			'render' => array( self::class, 'render_settings_content' ),
 		);
 		return $tabs;

@@ -30,20 +30,8 @@ var useSelect = wp.data.useSelect;
 var Spinner = wp.components.Spinner;
 var Notice = wp.components.Notice;
 
-var customIcon__bandcamp_discography = createElement(
-	'svg',
-	{ xmlns: 'http://www.w3.org/2000/svg', viewBox: '0 0 24 24' },
-	createElement('path', {
-		d: 'M10.1,8.9l-3.3,6h7l3.3-6H10.1z M21.6,11.9c0-5.3-4.3-9.6-9.6-9.6s-9.6,4.3-9.6,9.6s4.3,9.6,9.6,9.6 	S21.6,17.2,21.6,11.9z M12,20.9c-5,0-9-4-9-9s4-9,9-9s9,4,9,9S17,20.9,12,20.9z'
-	})
-);
-
 registerBlockType('mds-bandcamp/bandcamp-discography', {
-	icon: {
-		background: '#1da0c3',
-		foreground: '#ffffff',
-		src: customIcon__bandcamp_discography
-	},
+	icon: 'album',
 	edit: function (props) {
 		var attributes = props.attributes;
 		var setAttributes = props.setAttributes;

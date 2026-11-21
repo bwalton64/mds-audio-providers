@@ -7,11 +7,7 @@
 	"description": "Embed Bandcamp form for customers to redeem download codes",
 	"keywords": ["bandcamp","download","form","codes"],
 	"category": "mds-release-manager",
-	"icon": {
-		"background": "#1da0c3", 
-		"foreground": "#ffffff",
-		"src": "album"
-	},
+	"icon": "album",
 	"supports": {
 		"html": false,
 		"anchor": true,

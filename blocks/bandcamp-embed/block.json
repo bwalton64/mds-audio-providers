@@ -7,11 +7,7 @@
 	"description": "Embed a Bandcamp player via shortcode, iframe, or URL",
 	"keywords": ["bandcamp","embed","audio","player"],
 	"category": "mds-release-manager",
-	"icon": {
-		"background": "#1da0c3", 
-		"foreground": "#ffffff",
-		"src": "album"
-	},
+	"icon": "album",
 	"supports": {
 		"html": false,
 		"anchor": true,

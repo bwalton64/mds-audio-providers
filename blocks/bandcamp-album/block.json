@@ -7,11 +7,7 @@
 	"description": "Embed a Bandcamp featured album section via URL",
 	"keywords": ["bandcamp","embed","featured","album","player"],
 	"category": "mds-release-manager",
-	"icon": {
-		"background": "#1da0c3", 
-		"foreground": "#ffffff",
-		"src": "album"
-	},
+	"icon": "album",
 	"supports": {
 		"html": false,
 		"anchor": true,
