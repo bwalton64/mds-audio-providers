@@ -1,3 +1,44 @@
 .mds-bandcamp-dependency-notice {
 	color: #d63638;
 }
+
+.mds-panel {
+	background: #fff;
+	padding: 15px;
+	border: 1px solid #ccd0d4;
+	max-width: 800px;
+	margin-bottom: 20px;
+}
+
+.mds-panel > h2:first-child,
+.mds-bc-cache-header h2 {
+	margin-top: 0;
+}
+
+.mds-bc-cache-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	margin-bottom: 12px;
+}
+
+.mds-bc-form-actions {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	margin-top: 15px;
+}
+
+.mds-bc-status-message {
+	font-weight: 600;
+	margin-left: 8px;
+}
+
+.mds-bc-status-message.is-success {
+	color: #007017;
+}
+
+.mds-bc-status-message.is-error {
+	color: #d63638;
+}

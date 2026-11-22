@@ -96,10 +96,19 @@ mds-bandcamp-integration/
   - **Permission:** `current_user_can( 'edit_posts' )`
   - **Args:** `search` (`string`), `page` (`int >= 1`)
   - **Behavior:** Delegates matching to `MDS_RM_Release_Search` and filters to published Releases with a verified Bandcamp `album_id`.
+- **`POST /mds-bandcamp/v1/settings`** (`MDS\Bandcamp\Api\RestApi::handle_save_settings_request`)
+  - **Permission:** `current_user_can( 'manage_options' )`
+  - **Args:** `transient` (`int` 1–1440, required)
+  - **Behavior:** Sanitizes and persists `mds_bandcamp__settings` via AJAX (`js/admin-settings.js`) without reloading or losing the `#tab-bandcamp` tab.
+- **`POST /mds-bandcamp/v1/cache/clear`** (`MDS\Bandcamp\Api\RestApi::handle_clear_cache_request`)
+  - **Permission:** `current_user_can( 'manage_options' )`
+  - **Behavior:** Calls `MDS\Bandcamp\Core\Cache::clear_all()` to purge `mds_bandcamp*` and `mds_bc_*` transients and flush object cache, returning JSON for in-place table updates.
 - **`wp_ajax_mds_bc_verify_url`** (`MDS\Bandcamp\Admin\Admin::ajax_verify_url`)
   - Nonce-protected (`mds_bc_verify_nonce`) AJAX endpoint used by `js/metabox-verify.js` (`mdsBcMetabox`) to verify Bandcamp album or artist URLs.
 - **`admin_post_mds_bc_clear_cache`** (`MDS\Bandcamp\Core\Cache::handle_clear_cache`)
-  - Nonce-protected (`mds_bc_clear_cache_action` / `mds_bc_clear_cache_nonce`) handler that clears plugin transients and flushes the site object cache.
+  - Non-JS fallback handler that calls `Cache::clear_all()` and redirects back to `wp_get_referer()` (appending `#tab-bandcamp` on Release Manager settings).
+- **`heartbeat_received`** (`MDS\Bandcamp\Core\Cache::handle_heartbeat_received`)
+  - Native WordPress Heartbeat API filter that appends `mds_bc_cache` (`transients`, `total_size`) when `data.mds_bc_refresh_cache` is requested by a `manage_options` user while the Bandcamp settings pane is active.
 
 ### Editor & Frontend Runtime Contracts
 

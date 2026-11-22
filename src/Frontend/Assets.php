@@ -36,7 +36,7 @@ final class Assets {
 	}
 
 	/**
-	 * Enqueue shared admin styles and release-editor styles when applicable.
+	 * Enqueue shared admin styles, settings AJAX script, and release-editor styles when applicable.
 	 *
 	 * @since 1.0.0
 	 *
@@ -45,6 +45,42 @@ final class Assets {
 	 */
 	public static function enqueue_admin_styles( string $hook_suffix ): void {
 		wp_enqueue_style( 'mds-bc-blocks', MDS_BC_PLUGIN_URL . '/css/blocks.css', array(), MDS_BC_PLUGIN_VERSION );
+
+		if ( in_array( $hook_suffix, array( 'settings_page_mds_bandcamp', 'release_page_mds-release-settings' ), true ) ) {
+			wp_enqueue_style( 'mds-bc-admin', MDS_BC_URL . 'css/admin.css', array(), (string) filemtime( MDS_BC_PATH . 'css/admin.css' ) );
+			wp_enqueue_script(
+				'mds-bc-admin-settings',
+				MDS_BC_URL . 'js/admin-settings.js',
+				array( 'jquery', 'heartbeat' ),
+				(string) filemtime( MDS_BC_PATH . 'js/admin-settings.js' ),
+				true
+			);
+			$settings_config = array(
+				'settingsUrl'   => rest_url( 'mds-bandcamp/v1/settings' ),
+				'clearCacheUrl' => rest_url( 'mds-bandcamp/v1/cache/clear' ),
+				'nonce'         => wp_create_nonce( 'wp_rest' ),
+				'i18n'          => array(
+					'saveSettings' => __( 'Save Settings', 'mds-bandcamp-integration' ),
+					'saving'       => __( 'Saving…', 'mds-bandcamp-integration' ),
+					'saved'        => __( 'Settings saved.', 'mds-bandcamp-integration' ),
+					'saveError'    => __( 'Failed to save settings. Please try again.', 'mds-bandcamp-integration' ),
+					'clearCache'   => __( 'Clear Cache', 'mds-bandcamp-integration' ),
+					'clearing'     => __( 'Clearing…', 'mds-bandcamp-integration' ),
+					'cleared'      => __( 'Cache cleared successfully!', 'mds-bandcamp-integration' ),
+					'clearError'   => __( 'Failed to clear cache. Please try again.', 'mds-bandcamp-integration' ),
+					'noTransients' => __( 'No Transients', 'mds-bandcamp-integration' ),
+				),
+			);
+			wp_add_inline_script(
+				'mds-bc-admin-settings',
+				'const mdsBcSettings = ' . wp_json_encode( $settings_config ) . ';',
+				'before'
+			);
+			if ( function_exists( 'wp_set_script_translations' ) ) {
+				wp_set_script_translations( 'mds-bc-admin-settings', 'mds-bandcamp-integration' );
+			}
+			return;
+		}
 
 		if ( ! in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) ) {
 			return;

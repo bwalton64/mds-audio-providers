@@ -1,5 +1,10 @@
-MDS Bandcamp Integration
-========================
+=== MDS Bandcamp Integration ===
+Contributors: mustydungeon
+Requires at least: 7.0
+Tested up to: 7.x
+Requires PHP: 8.0
+Stable tag: 1.0.1
+License: GPL-2.0-or-later
 
 MDS Bandcamp Integration includes the Bandcamp blocks, shortcode, API, cache,
 logging, and settings previously provided by Blocks for Bandcamp.
@@ -119,3 +124,13 @@ Run these commands from the plugin directory:
 On PowerShell, lint all PHP files with:
 
 * Get-ChildItem -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
+
+== Changelog ==
+
+= 1.0.1 =
+* Migrated all production classes to Composer PSR-4 autoloading under `MDS\Bandcamp\` (`src/`) with full WPCS and PHP 8.0+ compliance.
+* Standardized constants (`MDS_BC_*`), AJAX/admin-post actions (`mds_bc_*`), asset handles (`mds-bc-*`), and JS globals (`mdsBc*`) while preserving backwards-compatible options, post meta, blocks, and MDS Release Manager hooks.
+* Added Release and Artist Bandcamp meta boxes, Audio Player Manager integration, searchable zero-REST Release and Artist pickers, and contextual release/artist resolution.
+* Ajaxified Save Settings and Clear Cache via authenticated REST endpoints (`POST /mds-bandcamp/v1/settings`, `POST /mds-bandcamp/v1/cache/clear`) and added native WordPress Heartbeat API live cache table updates.
+* Wrapped Bandcamp settings and Cached Data in `.mds-panel` cards matching MDS Release Manager.
+* Hardened iframe embed origin validation, inline CSS sanitization, HTTP non-2xx error handling, bounded legacy migrations, and added `uninstall.php` cleanup.

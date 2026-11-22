@@ -60,6 +60,7 @@ $expected = array(
 	array( 'filter', 'render_block_data', array( MDS\Bandcamp\Migrations\BlockMigration::class, 'prepare_legacy_block' ), 10, 1 ),
 	array( 'action', 'admin_notices', array( MDS\Bandcamp\Core\Cache::class, 'show_clear_cache_notice' ), 10, 1 ),
 	array( 'action', 'admin_post_mds_bc_clear_cache', array( MDS\Bandcamp\Core\Cache::class, 'handle_clear_cache' ), 10, 1 ),
+	array( 'filter', 'heartbeat_received', array( MDS\Bandcamp\Core\Cache::class, 'handle_heartbeat_received' ), 10, 2 ),
 	array( 'action', 'init', array( MDS\Bandcamp\Blocks\Blocks::class, 'required_notice' ), 10, 1 ),
 	array( 'action', 'init', array( MDS\Bandcamp\Blocks\Blocks::class, 'load_blocks' ), 10, 1 ),
 	array( 'filter', 'block_categories_all', array( MDS\Bandcamp\Blocks\Blocks::class, 'custom_block_category' ), 10, 1 ),

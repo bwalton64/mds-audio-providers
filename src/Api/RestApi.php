@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace MDS\Bandcamp\Api;
 
+use MDS\Bandcamp\Admin\AdminInterface;
+use MDS\Bandcamp\Core\Cache;
 use MDS\Bandcamp\Core\Helpers;
 use MDS_RM_Release_Search;
 use WP_REST_Request;
@@ -80,13 +82,42 @@ final class RestApi {
 	}
 
 	/**
-	 * Register the editor release-search route.
+	 * Register the editor release-search and admin settings REST routes.
 	 *
 	 * @since 1.1.0
 	 *
 	 * @return void
 	 */
 	public static function register_routes(): void {
+		register_rest_route(
+			'mds-bandcamp/v1',
+			'/settings',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'permission_callback' => array( self::class, 'check_manage_options' ),
+				'args'                => array(
+					'transient' => array(
+						'type'              => 'integer',
+						'required'          => true,
+						'minimum'           => 1,
+						'maximum'           => 1440,
+						'sanitize_callback' => 'absint',
+					),
+				),
+				'callback'            => array( self::class, 'handle_save_settings_request' ),
+			)
+		);
+
+		register_rest_route(
+			'mds-bandcamp/v1',
+			'/cache/clear',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'permission_callback' => array( self::class, 'check_manage_options' ),
+				'callback'            => array( self::class, 'handle_clear_cache_request' ),
+			)
+		);
+
 		register_rest_route(
 			'mds-bandcamp/v1',
 			'/releases',
@@ -120,6 +151,63 @@ final class RestApi {
 	 */
 	public static function check_permissions(): bool {
 		return current_user_can( 'edit_posts' );
+	}
+
+	/**
+	 * Check whether the current user can manage Bandcamp plugin settings and cache.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return bool Whether the user has manage_options capability.
+	 */
+	public static function check_manage_options(): bool {
+		return current_user_can( 'manage_options' );
+	}
+
+	/**
+	 * Save Bandcamp plugin settings via REST API.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param WP_REST_Request $request REST request.
+	 * @return WP_REST_Response|array<string, mixed> REST response payload.
+	 */
+	public static function handle_save_settings_request( WP_REST_Request $request ) {
+		$sanitized = AdminInterface::sanitize_settings(
+			array(
+				'transient' => $request->get_param( 'transient' ),
+			)
+		);
+
+		update_option( 'mds_bandcamp__settings', $sanitized );
+
+		return rest_ensure_response(
+			array(
+				'success'  => true,
+				'settings' => $sanitized,
+				'message'  => __( 'Settings saved.', 'mds-bandcamp-integration' ),
+			)
+		);
+	}
+
+	/**
+	 * Clear cached Bandcamp transients via REST API.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return WP_REST_Response|array<string, mixed> REST response payload.
+	 */
+	public static function handle_clear_cache_request() {
+		$cleared = Cache::clear_all();
+
+		return rest_ensure_response(
+			array(
+				'success'    => true,
+				'cleared'    => $cleared,
+				'total_size' => (string) size_format( 0 ),
+				'message'    => __( 'Cache cleared successfully!', 'mds-bandcamp-integration' ),
+			)
+		);
 	}
 
 	/**

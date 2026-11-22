@@ -38,6 +38,7 @@ final class Cache {
 	public static function register_hooks(): void {
 		add_action( 'admin_notices', array( self::class, 'show_clear_cache_notice' ) );
 		add_action( 'admin_post_mds_bc_clear_cache', array( self::class, 'handle_clear_cache' ) );
+		add_filter( 'heartbeat_received', array( self::class, 'handle_heartbeat_received' ), 10, 2 );
 	}
 
 	/**
@@ -120,27 +121,60 @@ final class Cache {
 	}
 
 	/**
-	 * Handle "Clear Cache" button submission.
+	 * Return structured transient cache summary for admin display and Heartbeat updates.
 	 *
-	 * @since 1.0.0
+	 * @since 1.1.0
 	 *
-	 * @return void
+	 * @return array{transients: array<int, array<string, mixed>>, total_size: string} Cache summary payload.
 	 */
-	public static function handle_clear_cache(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'Unauthorized user', 'mds-bandcamp-integration' ) );
+	public static function get_cache_summary(): array {
+		$cached_json = self::get_transients_list( self::$plugin_key );
+		$decoded     = ! empty( $cached_json ) ? json_decode( $cached_json, true ) : array();
+		$transients  = is_array( $decoded ) ? array_reverse( $decoded ) : array();
+		$total_bytes = is_array( $decoded ) ? (int) array_sum( array_column( $decoded, 'size_bytes' ) ) : 0;
+
+		return array(
+			'transients' => $transients,
+			'total_size' => (string) size_format( $total_bytes ),
+		);
+	}
+
+	/**
+	 * Append live cache inspection data to WordPress Heartbeat responses when requested.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @param array<string, mixed> $response Heartbeat response data.
+	 * @param array<string, mixed> $data     Incoming Heartbeat payload from the browser.
+	 * @return array<string, mixed> Heartbeat response with optional `mds_bc_cache` summary.
+	 */
+	public static function handle_heartbeat_received( array $response, array $data ): array {
+		if ( empty( $data['mds_bc_refresh_cache'] ) || ! current_user_can( 'manage_options' ) ) {
+			return $response;
 		}
 
-		check_admin_referer( 'mds_bc_clear_cache_action', 'mds_bc_clear_cache_nonce' );
+		$response['mds_bc_cache'] = self::get_cache_summary();
 
+		return $response;
+	}
+
+	/**
+	 * Delete all plugin transients from the database and flush the object cache.
+	 *
+	 * @since 1.1.0
+	 *
+	 * @return int Number of deleted option rows.
+	 */
+	public static function clear_all(): int {
 		global $wpdb;
+
 		$like_legacy_val     = $wpdb->esc_like( '_transient_' . self::$plugin_key ) . '%';
 		$like_legacy_timeout = $wpdb->esc_like( '_transient_timeout_' . self::$plugin_key ) . '%';
 		$like_new_val        = $wpdb->esc_like( '_transient_mds_bc_' ) . '%';
 		$like_new_timeout    = $wpdb->esc_like( '_transient_timeout_mds_bc_' ) . '%';
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Clearing plugin transients directly.
-		$wpdb->query(
+		$deleted = $wpdb->query(
 			$wpdb->prepare(
 				"DELETE FROM {$wpdb->options}
 				WHERE option_name LIKE %s
@@ -156,11 +190,37 @@ final class Cache {
 
 		wp_cache_flush();
 
+		Logging::log( 'info', 'Transient cache manually cleared', array( 'function' => __FUNCTION__ ) );
+
+		return is_int( $deleted ) ? $deleted : 0;
+	}
+
+	/**
+	 * Handle "Clear Cache" non-JS form submission fallback.
+	 *
+	 * @since 1.0.0
+	 *
+	 * @return void
+	 */
+	public static function handle_clear_cache(): void {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'Unauthorized user', 'mds-bandcamp-integration' ) );
+		}
+
+		check_admin_referer( 'mds_bc_clear_cache_action', 'mds_bc_clear_cache_nonce' );
+
+		self::clear_all();
+
 		set_transient( 'mds_bc_clear_cache_notice', true, 30 );
 
-		Logging::log( 'info', 'Transient cache manually cleared', array( 'function' => 'handle_clear_cache' ) );
+		$redirect_url = wp_get_referer();
+		if ( ! $redirect_url ) {
+			$redirect_url = add_query_arg( 'page', self::$plugin_key, admin_url( 'options-general.php' ) );
+		} elseif ( false !== strpos( $redirect_url, 'page=mds-release-settings' ) && false === strpos( $redirect_url, '#' ) ) {
+			$redirect_url .= '#tab-bandcamp';
+		}
 
-		wp_safe_redirect( add_query_arg( 'page', self::$plugin_key, admin_url( 'options-general.php' ) ) );
+		wp_safe_redirect( $redirect_url );
 		exit;
 	}
 

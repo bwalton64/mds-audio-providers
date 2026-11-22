@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MDS Bandcamp Integration
  * Description: Bandcamp blocks, shortcode, caching, REST metadata, and optional MDS Release Manager integration.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Requires at least: 7.0
  * Requires PHP: 8.0
  * Text Domain: mds-bandcamp-integration
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'MDS_BC_VERSION' ) ) {
-	define( 'MDS_BC_VERSION', '1.0.0' );
+	define( 'MDS_BC_VERSION', '1.0.1' );
 }
 
 if ( ! defined( 'MDS_BC_PATH' ) ) {

@@ -16,6 +16,7 @@ $active = false;
 $requests = array();
 $http_response = array( 'code' => 200, 'body' => '<html>OK</html>' );
 $rest_route = null;
+$rest_routes = array();
 unset( $_SERVER['HTTP_HOST'] );
 
 function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 )
@@ -157,8 +158,9 @@ function wp_remote_retrieve_body( $response )
 
 function register_rest_route( $namespace, $route, $args )
 {
-    global $rest_route;
+    global $rest_route, $rest_routes;
     $rest_route = array( $namespace, $route, $args );
+    $rest_routes[ $route ] = array( $namespace, $route, $args );
 }
 
 final class WP_Error
@@ -296,6 +298,15 @@ if (
     || 'absint' !== $rest_route[2]['args']['page']['sanitize_callback']
 ) {
     throw new RuntimeException( 'Release search route registration changed.' );
+}
+if (
+    ! isset( $rest_routes['/settings'], $rest_routes['/cache/clear'] )
+    || WP_REST_Server::CREATABLE !== $rest_routes['/settings'][2]['methods']
+    || array( MDS\Bandcamp\Api\RestApi::class, 'check_manage_options' ) !== $rest_routes['/settings'][2]['permission_callback']
+    || WP_REST_Server::CREATABLE !== $rest_routes['/cache/clear'][2]['methods']
+    || array( MDS\Bandcamp\Api\RestApi::class, 'check_manage_options' ) !== $rest_routes['/cache/clear'][2]['permission_callback']
+) {
+    throw new RuntimeException( 'Admin settings or cache clear REST route registration failed.' );
 }
 
 $subdomain_cases = array(

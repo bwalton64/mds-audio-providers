@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	bcLightboxOverlay.style.display = 'none';
 	bcLightboxOverlay.innerHTML = `
 		<div id="bc-lightbox-content">
-			<img id="bc-lightbox-image" />
+			<img id="bc-lightbox-image" alt="" />
 		</div>
 		<button id="bc-lightbox-close" aria-label="Close">&times;</button>
 		<button id="bc-lightbox-prev" aria-label="Previous">&#10094;</button>

@@ -167,22 +167,27 @@ final class AdminInterface {
 
 		$settings = get_option( self::$plugin_key . '__settings', array() );
 		?>
-		<form action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" method="post">
-			<table class="form-table" role="presentation">
-				<tbody>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Transient Cache Length', 'mds-bandcamp-integration' ); ?></th>
-						<td>
-							<input type="number" name="<?php echo esc_attr( self::$plugin_key ); ?>__settings[transient]" value="<?php echo esc_attr( (string) ( $settings['transient'] ?? 60 ) ); ?>" min="1" max="1440" step="1">
-							<p class="description"><?php esc_html_e( "Choose a length (in minutes) for the Bandcamp data to be cached as a transient. Shorter lengths update data more frequently but use more calls; longer lengths are ideal for high-traffic sites or data that doesn't change often.", 'mds-bandcamp-integration' ); ?></p>
-						</td>
-					</tr>
-				</tbody>
-			</table>
-			<?php settings_fields( self::$plugin_key ); ?>
-			<button class="gf-plugin-button button" type="submit"><?php esc_html_e( 'Save Settings', 'mds-bandcamp-integration' ); ?></button>
+		<form id="mds-bc-settings-form" action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" method="post">
+			<div class="mds-panel">
+				<h2><?php esc_html_e( 'Cache Settings', 'mds-bandcamp-integration' ); ?></h2>
+				<table class="form-table" role="presentation">
+					<tbody>
+						<tr>
+							<th scope="row"><label for="mds-bc-transient-length"><?php esc_html_e( 'Transient Cache Length', 'mds-bandcamp-integration' ); ?></label></th>
+							<td>
+								<input id="mds-bc-transient-length" type="number" name="<?php echo esc_attr( self::$plugin_key ); ?>__settings[transient]" value="<?php echo esc_attr( (string) ( $settings['transient'] ?? 60 ) ); ?>" min="1" max="1440" step="1">
+								<p class="description"><?php esc_html_e( "Choose a length (in minutes) for the Bandcamp data to be cached as a transient. Shorter lengths update data more frequently but use more calls; longer lengths are ideal for high-traffic sites or data that doesn't change often.", 'mds-bandcamp-integration' ); ?></p>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+				<?php settings_fields( self::$plugin_key ); ?>
+				<div class="mds-admin-save-actions mds-bc-form-actions">
+					<button id="mds-bc-save-settings-btn" class="gf-plugin-button button button-primary" type="submit"><?php esc_html_e( 'Save Settings', 'mds-bandcamp-integration' ); ?></button>
+					<span id="mds-bc-save-status" class="mds-bc-status-message" role="status" aria-live="polite"></span>
+				</div>
+			</div>
 		</form>
-		<hr style="margin: 2em 0;">
 		<?php self::section_cache(); ?>
 		<?php
 	}
@@ -203,45 +208,50 @@ final class AdminInterface {
 			$total_bytes = is_array( $transients ) ? (int) array_sum( array_column( $transients, 'size_bytes' ) ) : 0;
 		}
 		?>
-		<div class="gf-settings-header">
-			<h3><?php esc_html_e( 'CACHED DATA', 'mds-bandcamp-integration' ); ?></h3>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<?php wp_nonce_field( 'mds_bc_clear_cache_action', 'mds_bc_clear_cache_nonce' ); ?>
-				<input type="hidden" name="action" value="mds_bc_clear_cache">
-				<button name="mds_bc_clear_cache" value="true" class="gf-plugin-button button"><?php esc_html_e( 'Clear Cache', 'mds-bandcamp-integration' ); ?></button>
-			</form>
-		</div>
-		<div class="gf-table-wrapper">
-			<table class="wp-list-table widefat fixed striped table-view-list">
-				<thead>
-					<tr>
-						<th style="width:80px"><?php esc_html_e( 'Size', 'mds-bandcamp-integration' ); ?></th>
-						<th style="width:180px"><?php esc_html_e( 'Expires', 'mds-bandcamp-integration' ); ?></th>
-						<th><?php esc_html_e( 'Key', 'mds-bandcamp-integration' ); ?></th>
-						<th><?php esc_html_e( 'Endpoint', 'mds-bandcamp-integration' ); ?></th>
-						<th><?php esc_html_e( 'ID', 'mds-bandcamp-integration' ); ?></th>
-					</tr>
-				</thead>
-				<tbody>
-					<?php
-					if ( $cached_transients ) {
-						$transients = json_decode( $cached_transients, true );
-						if ( is_array( $transients ) ) {
-							$transients = array_reverse( $transients );
-							foreach ( $transients as $transient ) {
-								echo '<tr><td>' . esc_html( (string) ( $transient['size_human'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['expires'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['key'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['endpoint'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['id'] ?? '' ) ) . '</td></tr>';
+		<div class="mds-panel">
+			<div class="gf-settings-header mds-bc-cache-header">
+				<h2><?php esc_html_e( 'Cached Data', 'mds-bandcamp-integration' ); ?></h2>
+				<form id="mds-bc-clear-cache-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+					<?php wp_nonce_field( 'mds_bc_clear_cache_action', 'mds_bc_clear_cache_nonce' ); ?>
+					<input type="hidden" name="action" value="mds_bc_clear_cache">
+					<button id="mds-bc-clear-cache-btn" name="mds_bc_clear_cache" value="true" class="gf-plugin-button button" type="submit"><?php esc_html_e( 'Clear Cache', 'mds-bandcamp-integration' ); ?></button>
+					<span id="mds-bc-cache-status" class="mds-bc-status-message" role="status" aria-live="polite"></span>
+				</form>
+			</div>
+			<div class="gf-table-wrapper">
+				<table class="wp-list-table widefat fixed striped table-view-list">
+					<thead>
+						<tr>
+							<th style="width:80px"><?php esc_html_e( 'Size', 'mds-bandcamp-integration' ); ?></th>
+							<th style="width:180px"><?php esc_html_e( 'Expires', 'mds-bandcamp-integration' ); ?></th>
+							<th><?php esc_html_e( 'Key', 'mds-bandcamp-integration' ); ?></th>
+							<th><?php esc_html_e( 'Endpoint', 'mds-bandcamp-integration' ); ?></th>
+							<th><?php esc_html_e( 'ID', 'mds-bandcamp-integration' ); ?></th>
+						</tr>
+					</thead>
+					<tbody id="mds-bc-cache-table-body">
+						<?php
+						if ( $cached_transients ) {
+							$transients = json_decode( $cached_transients, true );
+							if ( is_array( $transients ) && ! empty( $transients ) ) {
+								$transients = array_reverse( $transients );
+								foreach ( $transients as $transient ) {
+									echo '<tr><td>' . esc_html( (string) ( $transient['size_human'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['expires'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['key'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['endpoint'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['id'] ?? '' ) ) . '</td></tr>';
+								}
+							} elseif ( is_array( $transients ) ) {
+								echo '<tr><td colspan="5">' . esc_html__( 'No Transients', 'mds-bandcamp-integration' ) . '</td></tr>';
+							} else {
+								echo '<tr><td colspan="5">' . esc_html__( 'Invalid JSON structure in transients array.', 'mds-bandcamp-integration' ) . '</td></tr>';
 							}
 						} else {
-							echo '<tr><td colspan="5">' . esc_html__( 'Invalid JSON structure in transients array.', 'mds-bandcamp-integration' ) . '</td></tr>';
+							echo '<tr><td colspan="5">' . esc_html__( 'No Transients', 'mds-bandcamp-integration' ) . '</td></tr>';
 						}
-					} else {
-						echo '<tr><td colspan="5">' . esc_html__( 'No Transients', 'mds-bandcamp-integration' ) . '</td></tr>';
-					}
-					?>
-				</tbody>
-			</table>
+						?>
+					</tbody>
+				</table>
+			</div>
+			<p><strong><?php esc_html_e( 'Current Cache Size:', 'mds-bandcamp-integration' ); ?></strong> <span id="mds-bc-cache-total-size"><?php echo esc_html( (string) size_format( $total_bytes ) ); ?></span></p>
 		</div>
-		<p><strong><?php esc_html_e( 'Current Cache Size:', 'mds-bandcamp-integration' ); ?></strong> <?php echo esc_html( (string) size_format( $total_bytes ) ); ?></p>
 		<?php
 	}
 }

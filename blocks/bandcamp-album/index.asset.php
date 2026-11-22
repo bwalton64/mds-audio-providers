@@ -9,5 +9,5 @@
         'wp-server-side-render',
         'wp-i18n',
     ),
-    'version' => '1.0.0'
+    'version' => '1.0.1'
 );

@@ -2,7 +2,11 @@
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-22
+
 ### Added
+- Integrated the native WordPress Heartbeat API (`heartbeat_received` / `heartbeat-send` / `heartbeat-tick`) to live-refresh the Cached Data table and total cache size while the Bandcamp settings pane is visible, without custom polling timers or page reloads.
+- Added authenticated REST endpoints `POST /mds-bandcamp/v1/settings` and `POST /mds-bandcamp/v1/cache/clear` paired with `js/admin-settings.js` so Save Settings and Clear Cache operate via AJAX in place without losing the active Releases → Settings `#tab-bandcamp` tab or dying on `admin-post.php`.
 - Added `uninstall.php` to remove plugin options and transient cache entries when the plugin is deleted.
 - Add a **Bandcamp Integration** meta box to the Artist custom post type edit screen (`mds_bandcamp_artist_integration`, `bandcamp_artist_url`, `bandcamp_artist_subdomain`) with URL verification and subdomain extraction.
 - Add a searchable, zero-REST Artist picker (`window.mdsBandcampUseArtistPicker`, enriched via `mds_rm_artist_picker_item`) to the **Bandcamp Discography** block (`mds-bandcamp/bandcamp-discography`) with automatic Artist/Release context fallback when left blank.
@@ -16,6 +20,7 @@
 - Blocks placed on a release now automatically use that release's verified Bandcamp album (or its artist subdomain for the Discography block) when the block has no saved selection.
 
 ### Changed
+- Wrapped the Bandcamp Integration settings and Cached Data sections in `.mds-panel` containers matching the core MDS Release Manager settings layout (with standalone fallback styles in `css/admin.css`).
 - Migrated all 15 production classes from legacy `includes/` (`MDS_Bandcamp_*`) to Composer PSR-4 autoloaded classes under `src/` (`MDS\Bandcamp\*`) with `declare(strict_types=1);`, PHP 8.0 native types, complete PHPDoc annotations, and WPCS/PHPCompatibilityWP compliance.
 - Standardized plugin constants (`MDS_BC_*`), AJAX/admin-post actions (`mds_bc_verify_url`, `mds_bc_clear_cache`), nonces (`mds_bc_*`), script/style handles (`mds-bc-*`), ephemeral transients (`mds_bc_*`), and JS globals (`mdsBc*`), while preserving backwards-compatible `wp_options`, post meta, block names (`mds-bandcamp/*`), `[bandcamp]` shortcode, and MDS Release Manager hook contracts.
 - Replaced `wp_localize_script()` with `wp_add_inline_script()` for meta-box configuration and added `wp_set_script_translations()` for editor picker scripts.

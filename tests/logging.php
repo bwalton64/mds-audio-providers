@@ -89,6 +89,11 @@ function size_format( $bytes )
     return $bytes . ' B';
 }
 
+function current_user_can( $capability )
+{
+    return 'manage_options' === $capability;
+}
+
 final class Test_WPDB
 {
     public $options = 'wp_options';
@@ -135,6 +140,20 @@ if (
     || $wpdb->prepared_args[1] !== '\_transient\_timeout\_%'
 ) {
     throw new RuntimeException( 'Unfiltered cache inspection test failed.' );
+}
+
+$hb_ignored = MDS\Bandcamp\Core\Cache::handle_heartbeat_received( array(), array() );
+if ( isset( $hb_ignored['mds_bc_cache'] ) ) {
+    throw new RuntimeException( 'Heartbeat handler must not query cache unless requested.' );
+}
+
+$hb_refreshed = MDS\Bandcamp\Core\Cache::handle_heartbeat_received( array(), array( 'mds_bc_refresh_cache' => true ) );
+if (
+    ! isset( $hb_refreshed['mds_bc_cache']['transients'][0]['id'], $hb_refreshed['mds_bc_cache']['total_size'] )
+    || '123' !== $hb_refreshed['mds_bc_cache']['transients'][0]['id']
+    || '6 B' !== $hb_refreshed['mds_bc_cache']['total_size']
+) {
+    throw new RuntimeException( 'Heartbeat cache refresh payload test failed.' );
 }
 
 echo "Logging configuration and cache inspection tests passed.\n";

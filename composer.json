@@ -1,6 +1,7 @@
 {
   "name": "mds/bandcamp-integration",
   "description": "MDS Bandcamp Integration plugin for WordPress.",
+  "version": "1.0.1",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
   "require": {
