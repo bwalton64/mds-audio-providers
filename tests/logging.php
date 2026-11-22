@@ -15,14 +15,14 @@ if ( isset( $argv[1] ) ) {
     }
     ini_set( 'error_log', $argv[3] );
 
-    require __DIR__ . '/../includes/core/class-mds-bandcamp-logging.php';
+    require __DIR__ . '/../src/Core/Logging.php';
 
-    $result = MDS_Bandcamp_Logging::log( 'error', 'Fetch failed', array( 'endpoint' => 'album' ) );
+    $result = MDS\Bandcamp\Core\Logging::log( 'error', 'Fetch failed', array( 'endpoint' => 'album' ) );
     if ( 'on' === $argv[1] && in_array( $argv[2], array( 'on', 'path' ), true ) ) {
         if ( ! $result ) {
             exit( 1 );
         }
-        if ( MDS_Bandcamp_Logging::log( 'warning', 'Bad context', array( 'invalid' => fopen( 'php://memory', 'r' ) ) ) ) {
+        if ( MDS\Bandcamp\Core\Logging::log( 'warning', 'Bad context', array( 'invalid' => fopen( 'php://memory', 'r' ) ) ) ) {
             exit( 1 );
         }
     } elseif ( $result ) {
@@ -115,21 +115,21 @@ final class Test_WPDB
 }
 
 $wpdb = new Test_WPDB();
-require __DIR__ . '/../includes/core/class-mds-bandcamp-cache.php';
-$transients = json_decode( MDS_Bandcamp_Cache::get_transients_list( 'mds_bandcamp' ), true );
+require __DIR__ . '/../src/Core/Cache.php';
+$transients = json_decode( MDS\Bandcamp\Core\Cache::get_transients_list( 'mds_bandcamp' ), true );
 if (
     count( $transients ) !== 1
     || $transients[0]['endpoint'] !== 'album'
     || $transients[0]['id'] !== '123'
     || $transients[0]['size_bytes'] !== 6
     || $transients[0]['expires'] !== gmdate( 'Y-m-d H:i:s', 1700000000 )
-    || $wpdb->prepared_args[0] !== '%\_transient\_mds\_bandcamp%'
-    || $wpdb->prepared_args[1] !== '%\_transient\_timeout\_mds\_bandcamp%'
+    || $wpdb->prepared_args[0] !== '\_transient\_mds\_bandcamp%'
+    || $wpdb->prepared_args[1] !== '\_transient\_timeout\_mds\_bandcamp%'
 ) {
     throw new RuntimeException( 'Cache inspection test failed.' );
 }
 
-MDS_Bandcamp_Cache::get_transients_list( '' );
+MDS\Bandcamp\Core\Cache::get_transients_list( '' );
 if (
     $wpdb->prepared_args[0] !== '\_transient\_%'
     || $wpdb->prepared_args[1] !== '\_transient\_timeout\_%'

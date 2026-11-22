@@ -6,9 +6,9 @@
  */
 
 define( 'ABSPATH', __DIR__ . DIRECTORY_SEPARATOR );
-define( 'MDS_BANDCAMP_PLUGIN_URL', 'https://example.test/plugins/mds-bandcamp-integration' );
-define( 'MDS_BANDCAMP_URL', 'https://example.test/plugins/mds-bandcamp-integration/' );
-define( 'MDS_BANDCAMP_PLUGIN_VERSION', '1.0.0' );
+define( 'MDS_BC_PLUGIN_URL', 'https://example.test/plugins/mds-bandcamp-integration' );
+define( 'MDS_BC_URL', 'https://example.test/plugins/mds-bandcamp-integration/' );
+define( 'MDS_BC_PLUGIN_VERSION', '1.0.0' );
 
 $test_options = array();
 $enqueued_styles = array();
@@ -119,7 +119,7 @@ final class Block_Migration_Test_DB {
 	}
 }
 
-require __DIR__ . '/../includes/migrations/class-mds-bandcamp-block-migration.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 $attributes = array(
 	'albumID' => '123456',
@@ -136,7 +136,7 @@ $legacy_block = array(
 		),
 	),
 );
-$prepared_block = MDS_Bandcamp_Block_Migration::prepare_legacy_block( $legacy_block );
+$prepared_block = MDS\Bandcamp\Migrations\BlockMigration::prepare_legacy_block( $legacy_block );
 if (
 	'mds-bandcamp/bandcamp-album' !== $prepared_block['blockName']
 	|| $attributes !== $prepared_block['attrs']
@@ -147,12 +147,12 @@ if (
 }
 
 foreach ( $enqueued_styles as $style ) {
-	if ( 'mds-bandcamp-blocks' !== $style[0] || 'https://example.test/plugins/mds-bandcamp-integration/css/blocks.css' !== $style[1] ) {
+	if ( 'mds-bc-blocks' !== $style[0] || 'https://example.test/plugins/mds-bandcamp-integration/css/blocks.css' !== $style[1] ) {
 		throw new RuntimeException( 'Legacy block CSS was registered with an unexpected handle or path.' );
 	}
 }
 foreach ( $enqueued_scripts as $script ) {
-	if ( 'mds-bandcamp-blocks' !== $script[0] || 'https://example.test/plugins/mds-bandcamp-integration/js/blocks.js' !== $script[1] ) {
+	if ( 'mds-bc-blocks' !== $script[0] || 'https://example.test/plugins/mds-bandcamp-integration/js/blocks.js' !== $script[1] ) {
 		throw new RuntimeException( 'Legacy block script was registered with an unexpected handle or path.' );
 	}
 }
@@ -169,7 +169,7 @@ $wpdb->posts_by_id = array(
 	30 => (object) array( 'ID' => 30, 'post_type' => 'revision', 'post_content' => $original_album_content ),
 );
 
-MDS_Bandcamp_Block_Migration::run();
+MDS\Bandcamp\Migrations\BlockMigration::run();
 if (
 	'<!-- wp:mds-bandcamp/bandcamp-album {"albumID":"123456","url":"https://artist.bandcamp.com/album/example"} --><div></div><!-- /wp:mds-bandcamp/bandcamp-album -->' !== $wpdb->posts_by_id[10]->post_content
 	|| $original_merch_content !== $wpdb->posts_by_id[20]->post_content
@@ -180,7 +180,7 @@ if (
 }
 
 $migration_failure_id = 0;
-MDS_Bandcamp_Block_Migration::run();
+MDS\Bandcamp\Migrations\BlockMigration::run();
 if (
 	'<!-- wp:mds-bandcamp/bandcamp-merch {"albumID":"654321","single_or_all":"all"} --><div></div><!-- /wp:mds-bandcamp/bandcamp-merch -->' !== $wpdb->posts_by_id[20]->post_content
 	|| 20 !== (int) $test_options['mds_bandcamp_block_migration_cursor']
@@ -190,7 +190,7 @@ if (
 	throw new RuntimeException( 'Migration resume did not preserve attributes and checkpoint progress.' );
 }
 
-MDS_Bandcamp_Block_Migration::run();
+MDS\Bandcamp\Migrations\BlockMigration::run();
 if (
 	1 !== (int) $test_options['mds_bandcamp_block_namespace_migrated']
 	|| isset( $test_options['mds_bandcamp_block_migration_cursor'] )
@@ -200,7 +200,7 @@ if (
 }
 
 $query_count = $wpdb->query_count;
-MDS_Bandcamp_Block_Migration::run();
+MDS\Bandcamp\Migrations\BlockMigration::run();
 if ( $query_count !== $wpdb->query_count ) {
 	throw new RuntimeException( 'Completed block migration was not idempotent.' );
 }

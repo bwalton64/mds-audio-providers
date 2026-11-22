@@ -83,9 +83,7 @@ function rest_ensure_response( $value )
 }
 function add_action( $hook, $callback, $priority = 10, $accepted_args = 1 ) {}
 
-require dirname( __DIR__ ) . '/includes/core/class-mds-bandcamp-helpers.php';
-require dirname( __DIR__ ) . '/includes/core/class-mds-bandcamp-dependencies.php';
-require dirname( __DIR__ ) . '/includes/api/class-mds-bandcamp-rest-api.php';
+require dirname( __DIR__ ) . '/vendor/autoload.php';
 
 function check_endpoint( $condition, $message )
 {
@@ -104,7 +102,7 @@ $GLOBALS['bandcamp_meta'] = array(
     50 => array( 'url' => 'https://brianwalton.bandcamp.com/album/none' ),
 );
 
-$response = MDS_Bandcamp_REST_API::handle_releases_request( new WP_REST_Request( array( 'search' => 'Walton', 'page' => 1 ) ) );
+$response = MDS\Bandcamp\Api\RestApi::handle_releases_request( new WP_REST_Request( array( 'search' => 'Walton', 'page' => 1 ) ) );
 check_endpoint( 'Walton' === $GLOBALS['queried_term'], 'The search term must reach the shared Release search.' );
 check_endpoint( 1 === count( $response['items'] ) && 1 === $response['pages'], 'Releases without an album ID must be filtered before pagination.' );
 check_endpoint(

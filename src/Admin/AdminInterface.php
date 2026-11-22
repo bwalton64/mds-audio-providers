@@ -2,8 +2,16 @@
 /**
  * Admin settings interface for MDS Bandcamp Integration.
  *
- * @package MDS_Bandcamp_Integration
+ * @package MDS\Bandcamp
+ * @since   1.0.0
  */
+
+declare(strict_types=1);
+
+namespace MDS\Bandcamp\Admin;
+
+use MDS\Bandcamp\Core\Cache;
+use MDS_RM_Release_Meta;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -14,16 +22,19 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-final class MDS_Bandcamp_Admin_Interface {
+final class AdminInterface {
 	/**
-	 * Settings option prefix.
+	 * Settings option prefix preserved for backwards compatibility with `mds_bandcamp__settings`.
 	 *
+	 * @since 1.0.0
 	 * @var string
 	 */
 	private static string $plugin_key = 'mds_bandcamp';
 
 	/**
 	 * Register settings and admin menu hooks.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
@@ -34,7 +45,9 @@ final class MDS_Bandcamp_Admin_Interface {
 	}
 
 	/**
-	 * Register the plugin settings option.
+	 * Register the plugin settings option and Release Manager extension meta.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
@@ -70,8 +83,10 @@ final class MDS_Bandcamp_Admin_Interface {
 	/**
 	 * Sanitize the plugin settings.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @param mixed $settings Submitted settings.
-	 * @return array Sanitized settings.
+	 * @return array{transient?: int} Sanitized settings.
 	 */
 	public static function sanitize_settings( $settings ): array {
 		if ( ! is_array( $settings ) ) {
@@ -88,6 +103,8 @@ final class MDS_Bandcamp_Admin_Interface {
 
 	/**
 	 * Add the standalone settings page.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
@@ -106,6 +123,8 @@ final class MDS_Bandcamp_Admin_Interface {
 	/**
 	 * Render the standalone settings page.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	public static function render_settings_page(): void {
@@ -121,8 +140,10 @@ final class MDS_Bandcamp_Admin_Interface {
 	/**
 	 * Add the Bandcamp tab to MDS Release Manager settings.
 	 *
-	 * @param array $tabs Existing settings tabs.
-	 * @return array Settings tabs including Bandcamp.
+	 * @since 1.0.0
+	 *
+	 * @param array<string, array<string, mixed>> $tabs Existing settings tabs.
+	 * @return array<string, array<string, mixed>> Settings tabs including Bandcamp.
 	 */
 	public static function register_release_manager_tab( array $tabs ): array {
 		$tabs['bandcamp'] = array(
@@ -134,6 +155,8 @@ final class MDS_Bandcamp_Admin_Interface {
 
 	/**
 	 * Render settings content for either settings page.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
@@ -150,7 +173,7 @@ final class MDS_Bandcamp_Admin_Interface {
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Transient Cache Length', 'mds-bandcamp-integration' ); ?></th>
 						<td>
-							<input type="number" name="<?php echo esc_attr( self::$plugin_key ); ?>__settings[transient]" value="<?php echo esc_attr( $settings['transient'] ?? 60 ); ?>" min="1" max="1440" step="1">
+							<input type="number" name="<?php echo esc_attr( self::$plugin_key ); ?>__settings[transient]" value="<?php echo esc_attr( (string) ( $settings['transient'] ?? 60 ) ); ?>" min="1" max="1440" step="1">
 							<p class="description"><?php esc_html_e( "Choose a length (in minutes) for the Bandcamp data to be cached as a transient. Shorter lengths update data more frequently but use more calls; longer lengths are ideal for high-traffic sites or data that doesn't change often.", 'mds-bandcamp-integration' ); ?></p>
 						</td>
 					</tr>
@@ -167,23 +190,25 @@ final class MDS_Bandcamp_Admin_Interface {
 	/**
 	 * Render cached transient information and cache controls.
 	 *
+	 * @since 1.0.0
+	 *
 	 * @return void
 	 */
 	private static function section_cache(): void {
-		$cached_transients = MDS_Bandcamp_Cache::get_transients_list( self::$plugin_key );
-		$total_bytes = 0;
+		$cached_transients = Cache::get_transients_list( self::$plugin_key );
+		$total_bytes       = 0;
 
 		if ( ! empty( $cached_transients ) ) {
-			$transients = json_decode( $cached_transients, true );
-			$total_bytes = is_array( $transients ) ? array_sum( array_column( $transients, 'size_bytes' ) ) : 0;
+			$transients  = json_decode( $cached_transients, true );
+			$total_bytes = is_array( $transients ) ? (int) array_sum( array_column( $transients, 'size_bytes' ) ) : 0;
 		}
 		?>
 		<div class="gf-settings-header">
 			<h3><?php esc_html_e( 'CACHED DATA', 'mds-bandcamp-integration' ); ?></h3>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<?php wp_nonce_field( 'gf_clear_cache_action', 'gf_clear_cache_nonce' ); ?>
-				<input type="hidden" name="action" value="<?php echo esc_attr( self::$plugin_key ); ?>_clear_cache">
-				<button name="gf_clear_cache" value="true" class="gf-plugin-button button"><?php esc_html_e( 'Clear Cache', 'mds-bandcamp-integration' ); ?></button>
+				<?php wp_nonce_field( 'mds_bc_clear_cache_action', 'mds_bc_clear_cache_nonce' ); ?>
+				<input type="hidden" name="action" value="mds_bc_clear_cache">
+				<button name="mds_bc_clear_cache" value="true" class="gf-plugin-button button"><?php esc_html_e( 'Clear Cache', 'mds-bandcamp-integration' ); ?></button>
 			</form>
 		</div>
 		<div class="gf-table-wrapper">
@@ -204,7 +229,7 @@ final class MDS_Bandcamp_Admin_Interface {
 						if ( is_array( $transients ) ) {
 							$transients = array_reverse( $transients );
 							foreach ( $transients as $transient ) {
-								echo '<tr><td>' . esc_html( $transient['size_human'] ) . '</td><td>' . esc_html( $transient['expires'] ) . '</td><td>' . esc_html( $transient['key'] ) . '</td><td>' . esc_html( $transient['endpoint'] ) . '</td><td>' . esc_html( $transient['id'] ) . '</td></tr>';
+								echo '<tr><td>' . esc_html( (string) ( $transient['size_human'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['expires'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['key'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['endpoint'] ?? '' ) ) . '</td><td>' . esc_html( (string) ( $transient['id'] ?? '' ) ) . '</td></tr>';
 							}
 						} else {
 							echo '<tr><td colspan="5">' . esc_html__( 'Invalid JSON structure in transients array.', 'mds-bandcamp-integration' ) . '</td></tr>';
@@ -216,8 +241,7 @@ final class MDS_Bandcamp_Admin_Interface {
 				</tbody>
 			</table>
 		</div>
-		<p><strong><?php esc_html_e( 'Current Cache Size:', 'mds-bandcamp-integration' ); ?></strong> <?php echo esc_html( size_format( $total_bytes ) ); ?></p>
+		<p><strong><?php esc_html_e( 'Current Cache Size:', 'mds-bandcamp-integration' ); ?></strong> <?php echo esc_html( (string) size_format( $total_bytes ) ); ?></p>
 		<?php
 	}
 }
-

@@ -6,8 +6,8 @@
  */
 
 define( 'ABSPATH', __DIR__ . DIRECTORY_SEPARATOR );
-define( 'MDS_BANDCAMP_VERSION', '1.0.0' );
-define( 'MDS_BANDCAMP_PATH', dirname( __DIR__ ) . DIRECTORY_SEPARATOR );
+define( 'MDS_BC_VERSION', '1.0.0' );
+define( 'MDS_BC_PATH', dirname( __DIR__ ) . DIRECTORY_SEPARATOR );
 
 $theme_template_calls = array();
 
@@ -56,9 +56,9 @@ function disabled( $disabled )
 	}
 }
 
-require dirname( __DIR__ ) . '/includes/core/class-mds-bandcamp-templates.php';
+require dirname( __DIR__ ) . '/src/Core/Templates.php';
 
-$admin_output = MDS_Bandcamp_Templates::render(
+$admin_output = MDS\Bandcamp\Core\Templates::render(
 	'admin-settings.php',
 	array(
 		'nonce_field'        => '',
@@ -68,11 +68,11 @@ $admin_output = MDS_Bandcamp_Templates::render(
 	)
 );
 
-if ( ! empty( $theme_template_calls ) || false === strpos( $admin_output, 'mds_bandcamp_url' ) ) {
-	throw new RuntimeException( 'The admin view must use the plugin-owned includes/admin/views template.' );
+if ( ! empty( $theme_template_calls ) || false === strpos( $admin_output, 'mds_bc_url' ) ) {
+	throw new RuntimeException( 'The admin view must use the plugin-owned templates/admin template.' );
 }
 
-$frontend_output = MDS_Bandcamp_Templates::render( 'frontend-widget.php' );
+$frontend_output = MDS\Bandcamp\Core\Templates::render( 'frontend-widget.php' );
 if (
 	array( 'mds-bandcamp-integration/frontend-widget.php' ) !== $theme_template_calls
 	|| 'child-theme-template' !== $frontend_output

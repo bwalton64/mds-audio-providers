@@ -33,7 +33,6 @@
 		"display_album_artist": { "type": "boolean", "default": true },
 		"display_album_link": { "type": "boolean", "default": true },
 		"display_album_title": { "type": "boolean", "default": true },
-		"display_album_border": { "type": "boolean", "default": true },
 		"layout_grid_gap": { "type": "string", "default": "2rem" },
 		"layout_columns": { "type": "number", "default": 3 },
 		"layout_columns_mobile": { "type": "number", "default": 2 }

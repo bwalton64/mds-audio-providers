@@ -8,19 +8,19 @@ Requirements
 ------------
 
 * PHP 8.0 or newer
-* WordPress 6.3 or newer
-* MDS Release Manager is optional. It is required only for the release meta box
-  and release-page integration.
+* WordPress 7.0 or newer (tested up to 7.x)
+* MDS Release Manager is optional. It is required only for the release/artist
+  meta boxes, Audio Player Manager, and release-page integration.
 
 Code layout
 -----------
 
-* includes/admin/ and includes/admin/views/: settings, release meta box, and admin views.
-* includes/api/: Bandcamp page fetching and REST API.
-* includes/core/: dependencies, cache, logging, templates, and utilities.
-* includes/blocks/ and blocks/: block registration and the six block implementations.
-* includes/frontend/: frontend integration and asset registration.
-* includes/migrations/: legacy settings, shortcode, and block namespace migrations.
+* src/Admin/ and templates/admin/: settings, release/artist meta boxes, and admin views.
+* src/Api/: Bandcamp page fetching and REST API.
+* src/Core/: dependencies, cache, helpers, logging, templates, and utilities.
+* src/Blocks/ and blocks/: block registration and the six block implementations.
+* src/Frontend/: frontend integration and asset registration.
+* src/Migrations/: legacy settings, shortcode, and block namespace migrations.
 * templates/, css/, and js/: frontend template fallback and shared assets.
 
 Frontend overrides remain available at
@@ -44,7 +44,11 @@ Use Settings > MDS Bandcamp Integration to configure transient cache duration,
 inspect cached data, and clear the cache. The existing settings option is
 registered through the WordPress Settings API.
 When MDS Release Manager is active, the same controls are also available under
-Releases > Settings > Bandcamp.
+Releases > Settings > Bandcamp Integration, the Bandcamp Album Player is
+registered in Releases > Settings > Audio Player Manager (with automatic
+fallback to the core HTML5 player on releases without a Bandcamp album), and
+Bandcamp Integration meta boxes are added to both Release and Artist edit
+screens.
 
 The cache table lists database-backed transients. An external object cache may
 store transients outside that table. Clearing the cache also flushes the site's
@@ -109,6 +113,8 @@ Run these commands from the plugin directory:
 * php tests/block-metadata.php
 * php tests/block-migration.php
 * php tests/templates.php
+* php tests/release-links-player.php
+* php tests/releases-endpoint.php
 
 On PowerShell, lint all PHP files with:
 

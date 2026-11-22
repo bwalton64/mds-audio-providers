@@ -2,8 +2,13 @@
 /**
  * PHP template loading for MDS Bandcamp Integration.
  *
- * @package MDS_Bandcamp_Integration
+ * @package MDS\Bandcamp
+ * @since   1.0.0
  */
+
+declare(strict_types=1);
+
+namespace MDS\Bandcamp\Core;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -17,35 +22,35 @@ if ( ! defined( 'ABSPATH' ) ) {
  *
  * @since 1.0.0
  */
-final class MDS_Bandcamp_Templates
-{
+final class Templates {
 	/**
 	 * Render a theme-overridable or bundled plugin template.
 	 *
-	 * @param string $template_name PHP template filename.
-	 * @param array  $args          Variables to extract for the template.
+	 * @since 1.0.0
+	 *
+	 * @param string               $template_name PHP template filename.
+	 * @param array<string, mixed> $args          Variables to extract for the template.
 	 * @return string Rendered template output, or an empty string on failure.
 	 */
-	public static function render( $template_name, $args = array() ): string
-	{
+	public static function render( $template_name, $args = array() ): string {
 		if ( ! is_string( $template_name ) || basename( $template_name ) !== $template_name || '.php' !== strtolower( substr( $template_name, -4 ) ) ) {
-			_doing_it_wrong( __METHOD__, esc_html__( 'Template name must be a PHP filename.', 'mds-bandcamp-integration' ), esc_html( MDS_BANDCAMP_VERSION ) );
+			_doing_it_wrong( __METHOD__, esc_html__( 'Template name must be a PHP filename.', 'mds-bandcamp-integration' ), esc_html( MDS_BC_VERSION ) );
 			return '';
 		}
 
 		if ( ! is_array( $args ) ) {
-			_doing_it_wrong( __METHOD__, esc_html__( 'Template arguments must be provided as an array.', 'mds-bandcamp-integration' ), esc_html( MDS_BANDCAMP_VERSION ) );
+			_doing_it_wrong( __METHOD__, esc_html__( 'Template arguments must be provided as an array.', 'mds-bandcamp-integration' ), esc_html( MDS_BC_VERSION ) );
 			return '';
 		}
 
-		$is_admin_view = 'admin-settings.php' === $template_name;
-		$theme_template = $is_admin_view
+		$is_admin_view              = 'admin-settings.php' === $template_name;
+		$theme_template             = $is_admin_view
 			? ''
 			: locate_template( 'mds-bandcamp-integration/' . $template_name );
-		$default_template_directory = $is_admin_view ? 'includes/admin/views/' : 'templates/';
-		$template_path = $theme_template
+		$default_template_directory = $is_admin_view ? 'templates/admin/' : 'templates/';
+		$template_path              = $theme_template
 			? $theme_template
-			: MDS_BANDCAMP_PATH . $default_template_directory . $template_name;
+			: MDS_BC_PATH . $default_template_directory . $template_name;
 
 		if ( ! is_readable( $template_path ) ) {
 			_doing_it_wrong(
@@ -55,7 +60,7 @@ final class MDS_Bandcamp_Templates
 					esc_html__( 'The "%s" template could not be found.', 'mds-bandcamp-integration' ),
 					esc_html( $template_name )
 				),
-				esc_html( MDS_BANDCAMP_VERSION )
+				esc_html( MDS_BC_VERSION )
 			);
 			return '';
 		}
@@ -68,4 +73,3 @@ final class MDS_Bandcamp_Templates
 		return (string) ob_get_clean();
 	}
 }
-

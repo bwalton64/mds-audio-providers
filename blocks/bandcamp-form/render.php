@@ -2,138 +2,176 @@
 /**
  * Server-side rendering for the Bandcamp download-code form block.
  *
- * @package MDS_Bandcamp_Integration
+ * @package MDS\Bandcamp
+ * @since   1.0.0
  */
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-$align = !empty( $attributes['align'] ) ? esc_attr( $attributes['align'] ) : '';
-$anchor = !empty( $attributes['anchor'] ) ? esc_attr( $attributes['anchor'] ) : esc_attr('wp-block-' . wp_rand());
-$blockID = !empty( $attributes['blockID'] ) ? esc_attr( $attributes['blockID'] ) : esc_attr('wp-block-' . wp_rand());
-$className = !empty( $attributes['className'] ) ? esc_attr( $attributes['className'] ) : '';
-$is_editor = defined( 'REST_REQUEST' ) && REST_REQUEST && isset( $_REQUEST['context'] ) && $_REQUEST['context'] === 'edit';
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-$button_text = $attributes['button_text'] ?? 'Redeem Download';
-$input_placeholder_text = $attributes['input_placeholder_text'] ?? 'XXXX-XXXX';
-$layout_style = $attributes['layout_style'] ?? 'stacked';
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-$wrapper_attributes = get_block_wrapper_attributes( [
-    'id' => $anchor,
-] );
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-/**
- * Helper: Given a raw BoxControl side value (e.g. "10", "2.5", "1em", ""),
- * return a valid CSS dimension (e.g. "10px", "2.5px", "1em", or "0px" if empty).
- */
-$normalize_padding_value = function( $raw ) {
-    // If empty or not set, treat as "0px"
-    if ( $raw === '' || is_null( $raw ) ) { return '0px'; }
-    // If it already ends with letters (e.g. "em", "rem", "%", "px"), leave as-is:
-    if ( preg_match( '/[a-zA-Z%]+$/', $raw ) ) { return esc_attr( $raw ); }
-    // If it’s purely numeric (e.g. "10" or "2.5"), append "px":
-    if ( preg_match( '/^\d+(\.\d+)?$/', $raw ) ) { return esc_attr( $raw ) . 'px'; }
-    // Fallback: return as-is (escaped)
-    return esc_attr( $raw );
-};
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-// Build CSS for inline styles
-$cssButton = '';
-$cssButtonHover = '';
-$cssInput = '';
-$cssInputHover = '';
-
-// Input style attributes
-$cssInput .= !empty( $attributes['inputBackgroundColor']) ? 'background-color:'.esc_attr($attributes['inputBackgroundColor']).';' : '';
-$cssInput .= !empty( $attributes['inputTextColor'] ) ? 'color:' . esc_attr( $attributes['inputTextColor'] ) . ';' : '';
-$cssInput .= !empty( $attributes['inputFontSize'] ) ? 'font-size:' . esc_attr( $attributes['inputFontSize'] ) . $attributes['inputFontUnit'] . ';' : '';
-$cssInput .= !empty( $attributes['inputFontFamily'] ) ? 'font-family:' . esc_attr( $attributes['inputFontFamily'] ) . ';' : '';
-$cssInput .= !empty( $attributes['inputFontStyle'] ) ? 'font-style:' . esc_attr( $attributes['inputFontStyle'] ) . ';' : '';
-$cssInput .= !empty( $attributes['inputLineHeight'] ) ? 'line-height:' . floatval( $attributes['inputLineHeight'] ) . ';' : '';
-$cssInput .= !empty( $attributes['inputTextAlign'] ) ? 'text-align:' . esc_attr( $attributes['inputTextAlign'] ) . ';' : '';	
-
-// Button style attributes
-$cssButton .= !empty( $attributes['buttonBackgroundColor'] ) ? 'background-color:' . esc_attr( $attributes['buttonBackgroundColor'] ) . ';' : '';
-$cssButton .= !empty( $attributes['buttonTextColor'] ) ? 'color:' . esc_attr( $attributes['buttonTextColor'] ) . ';' : '';
-$cssButton .= !empty( $attributes['buttonFontSize'] ) ? 'font-size:' . esc_attr( $attributes['buttonFontSize'] ) . $attributes['buttonFontUnit'] . ';' : '';
-$cssButton .= !empty( $attributes['buttonFontFamily'] ) ? 'font-family:' . esc_attr( $attributes['buttonFontFamily'] ) . ';' : '';
-$cssButton .= !empty( $attributes['buttonFontStyle'] ) ? 'font-style:' . esc_attr( $attributes['buttonFontStyle'] ) . ';' : '';
-$cssButton .= !empty( $attributes['buttonLineHeight'] ) ? 'line-height:' . floatval( $attributes['buttonLineHeight'] ) . ';' : '';
-$cssButton .= !empty( $attributes['buttonTextAlign'] ) ? 'text-align:' . esc_attr( $attributes['buttonTextAlign'] ) . ';' : '';
-
-// Build input-border string:
-if ( !empty( $attributes['inputBorder'] ) && is_array( $attributes['inputBorder'] ) ) {
-    $ib 	   		= $attributes['inputBorder'];
-    $cssInputHover .= !empty( $ib['color'] ) ? 'border-color:' . esc_attr( $ib['color'] ) . ';'   : '';
-    $cssInputHover .= !empty( $ib['style'] ) ? 'border-style:' . esc_attr( $ib['style'] ) . ';'   : '';
-    $cssInputHover .= !empty( $ib['width'] ) ? 'border-width:' . esc_attr( $ib['width'] ) . ';'   : '';
-    $cssInputHover .= !empty( $ib['radius'] ) ? 'border-radius:' . esc_attr( $ib['radius'] ) . ';' : '';
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
 }
 
-// Build button-border string:
-if ( !empty( $attributes['buttonBorder'] ) && is_array( $attributes['buttonBorder'] ) ) {
-    $bb         	 = $attributes['buttonBorder'];
-    $cssButtonHover .= !empty( $bb['color'] ) ? 'border-color:' . esc_attr( $bb['color'] ) . ';'   : '';
-    $cssButtonHover .= !empty( $bb['style'] ) ? 'border-style:' . esc_attr( $bb['style'] ) . ';'   : '';
-    $cssButtonHover .= !empty( $bb['width'] ) ? 'border-width:' . esc_attr( $bb['width'] ) . ';'   : '';
-    $cssButtonHover .= !empty( $bb['radius']) ? 'border-radius:' . esc_attr( $bb['radius'] ) . ';' : '';
-}
+( static function ( array $attributes ): void {
+	$anchor   = ! empty( $attributes['anchor'] ) ? esc_attr( (string) $attributes['anchor'] ) : esc_attr( 'wp-block-' . wp_rand() );
+	$block_id = ! empty( $attributes['blockID'] ) ? esc_attr( (string) $attributes['blockID'] ) : esc_attr( 'wp-block-' . wp_rand() );
+	// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Gutenberg ServerSideRender context flag.
+	$is_editor = defined( 'REST_REQUEST' ) && REST_REQUEST && isset( $_REQUEST['context'] ) && 'edit' === $_REQUEST['context'];
 
-// Build input-padding string:
-if ( ! empty( $attributes['inputPadding'] ) && is_array( $attributes['inputPadding'] ) ) {
-    $ip     	= $attributes['inputPadding'];
-    $top    	= $normalize_padding_value( $ip['top'] ?? '' );
-    $right  	= $normalize_padding_value( $ip['right'] ?? '' );
-    $bottom 	= $normalize_padding_value( $ip['bottom'] ?? '' );
-    $left   	= $normalize_padding_value( $ip['left'] ?? '' );
-    $cssInput 	.= "padding:{$top} {$right} {$bottom} {$left};";
-}
+	$button_text            = $attributes['button_text'] ?? 'Redeem Download';
+	$input_placeholder_text = $attributes['input_placeholder_text'] ?? 'XXXX-XXXX';
+	$layout_style           = $attributes['layout_style'] ?? 'stacked';
 
-// Build button-padding string:
-if ( ! empty( $attributes['buttonPadding'] ) && is_array( $attributes['buttonPadding'] ) ) {
-    $bp     	= $attributes['buttonPadding'];
-    $top    	= $normalize_padding_value( $bp['top'] ?? '' );
-    $right  	= $normalize_padding_value( $bp['right'] ?? '' );
-    $bottom 	= $normalize_padding_value( $bp['bottom'] ?? '' );
-    $left   	= $normalize_padding_value( $bp['left'] ?? '' );
-    $cssButton .= "padding:{$top} {$right} {$bottom} {$left};";
-}
+	$wrapper_attributes = get_block_wrapper_attributes(
+		array(
+			'id' => $anchor,
+		)
+	);
 
-// Build hover CSS:
-if ( !empty( $attributes['inputHoverColor'] ) ) {
-    $cssInputHover .= 'background-color: '.esc_attr( $attributes['inputHoverColor'] ).' !important';
-}
-if ( !empty( $attributes['buttonHoverColor'] ) ) {
-    $cssButtonHover .= 'background-color: '.esc_attr( $attributes['buttonHoverColor'] ).' !important';
-}
+	$normalize_padding_value = static function ( $raw ): string {
+		if ( ! is_scalar( $raw ) ) {
+			return '0px';
+		}
+		$raw = trim( (string) $raw );
+		if ( '' === $raw || '0' === $raw ) {
+			return '0px';
+		}
+		if ( preg_match( '/^\d+(?:\.\d+)?(?:px|em|rem|%|vh|vw)$/', $raw ) ) {
+			return $raw;
+		}
+		if ( preg_match( '/^\d+(?:\.\d+)?$/', $raw ) ) {
+			return $raw . 'px';
+		}
+		return '0px';
+	};
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-$blockID = sanitize_html_class( $blockID );
+	$sanitize_css_dimension = static function ( $raw ): string {
+		if ( ! is_scalar( $raw ) ) {
+			return '';
+		}
+		$raw = trim( (string) $raw );
+		if ( '0' === $raw || preg_match( '/^\d+(?:\.\d+)?(?:px|em|rem|%|vh|vw)$/', $raw ) ) {
+			return $raw;
+		}
+		return '';
+	};
 
-$css = "
-#{$blockID}.bandcamp-form button { $cssButton }
-#{$blockID}.bandcamp-form button:hover { $cssButtonHover }
-#{$blockID}.bandcamp-form input { $cssInput }
-#{$blockID}.bandcamp-form input:hover { $cssInputHover }
+	$sanitize_css_font_family = static function ( $raw ): string {
+		if ( ! is_string( $raw ) ) {
+			return '';
+		}
+		return trim( (string) preg_replace( '/[^a-zA-Z0-9\s,\'"-]/', '', $raw ) );
+	};
+
+	$allowed_font_styles   = array( 'normal', 'italic', 'oblique' );
+	$allowed_text_aligns   = array( 'left', 'center', 'right', 'justify' );
+	$allowed_border_styles = array( 'none', 'solid', 'dashed', 'dotted', 'double', 'groove', 'ridge', 'inset', 'outset' );
+	$allowed_font_units    = array( 'px', 'em', 'rem', '%' );
+
+	$css_button       = '';
+	$css_button_hover = '';
+	$css_input        = '';
+	$css_input_hover  = '';
+
+	// Input style attributes.
+	$input_bg   = ! empty( $attributes['inputBackgroundColor'] ) ? sanitize_hex_color( (string) $attributes['inputBackgroundColor'] ) : '';
+	$input_fg   = ! empty( $attributes['inputTextColor'] ) ? sanitize_hex_color( (string) $attributes['inputTextColor'] ) : '';
+	$input_unit = isset( $attributes['inputFontUnit'] ) && in_array( $attributes['inputFontUnit'], $allowed_font_units, true ) ? $attributes['inputFontUnit'] : 'px';
+	$css_input .= $input_bg ? 'background-color:' . $input_bg . ';' : '';
+	$css_input .= $input_fg ? 'color:' . $input_fg . ';' : '';
+	$css_input .= ! empty( $attributes['inputFontSize'] ) && is_numeric( $attributes['inputFontSize'] ) ? 'font-size:' . floatval( $attributes['inputFontSize'] ) . $input_unit . ';' : '';
+	$input_ff   = ! empty( $attributes['inputFontFamily'] ) ? $sanitize_css_font_family( $attributes['inputFontFamily'] ) : '';
+	$css_input .= '' !== $input_ff ? 'font-family:' . $input_ff . ';' : '';
+	$css_input .= ! empty( $attributes['inputFontStyle'] ) && in_array( $attributes['inputFontStyle'], $allowed_font_styles, true ) ? 'font-style:' . $attributes['inputFontStyle'] . ';' : '';
+	$css_input .= ! empty( $attributes['inputLineHeight'] ) && is_numeric( $attributes['inputLineHeight'] ) ? 'line-height:' . floatval( $attributes['inputLineHeight'] ) . ';' : '';
+	$css_input .= ! empty( $attributes['inputTextAlign'] ) && in_array( $attributes['inputTextAlign'], $allowed_text_aligns, true ) ? 'text-align:' . $attributes['inputTextAlign'] . ';' : '';
+
+	// Button style attributes.
+	$btn_bg      = ! empty( $attributes['buttonBackgroundColor'] ) ? sanitize_hex_color( (string) $attributes['buttonBackgroundColor'] ) : '';
+	$btn_fg      = ! empty( $attributes['buttonTextColor'] ) ? sanitize_hex_color( (string) $attributes['buttonTextColor'] ) : '';
+	$btn_unit    = isset( $attributes['buttonFontUnit'] ) && in_array( $attributes['buttonFontUnit'], $allowed_font_units, true ) ? $attributes['buttonFontUnit'] : 'px';
+	$css_button .= $btn_bg ? 'background-color:' . $btn_bg . ';' : '';
+	$css_button .= $btn_fg ? 'color:' . $btn_fg . ';' : '';
+	$css_button .= ! empty( $attributes['buttonFontSize'] ) && is_numeric( $attributes['buttonFontSize'] ) ? 'font-size:' . floatval( $attributes['buttonFontSize'] ) . $btn_unit . ';' : '';
+	$btn_ff      = ! empty( $attributes['buttonFontFamily'] ) ? $sanitize_css_font_family( $attributes['buttonFontFamily'] ) : '';
+	$css_button .= '' !== $btn_ff ? 'font-family:' . $btn_ff . ';' : '';
+	$css_button .= ! empty( $attributes['buttonFontStyle'] ) && in_array( $attributes['buttonFontStyle'], $allowed_font_styles, true ) ? 'font-style:' . $attributes['buttonFontStyle'] . ';' : '';
+	$css_button .= ! empty( $attributes['buttonLineHeight'] ) && is_numeric( $attributes['buttonLineHeight'] ) ? 'line-height:' . floatval( $attributes['buttonLineHeight'] ) . ';' : '';
+	$css_button .= ! empty( $attributes['buttonTextAlign'] ) && in_array( $attributes['buttonTextAlign'], $allowed_text_aligns, true ) ? 'text-align:' . $attributes['buttonTextAlign'] . ';' : '';
+
+	// Input border.
+	if ( ! empty( $attributes['inputBorder'] ) && is_array( $attributes['inputBorder'] ) ) {
+		$ib               = $attributes['inputBorder'];
+		$ib_color         = ! empty( $ib['color'] ) ? sanitize_hex_color( (string) $ib['color'] ) : '';
+		$ib_width         = ! empty( $ib['width'] ) ? $sanitize_css_dimension( $ib['width'] ) : '';
+		$ib_radius        = ! empty( $ib['radius'] ) ? $sanitize_css_dimension( $ib['radius'] ) : '';
+		$css_input_hover .= $ib_color ? 'border-color:' . $ib_color . ';' : '';
+		$css_input_hover .= ! empty( $ib['style'] ) && in_array( $ib['style'], $allowed_border_styles, true ) ? 'border-style:' . $ib['style'] . ';' : '';
+		$css_input_hover .= '' !== $ib_width ? 'border-width:' . $ib_width . ';' : '';
+		$css_input_hover .= '' !== $ib_radius ? 'border-radius:' . $ib_radius . ';' : '';
+	}
+
+	// Button border.
+	if ( ! empty( $attributes['buttonBorder'] ) && is_array( $attributes['buttonBorder'] ) ) {
+		$bb                = $attributes['buttonBorder'];
+		$bb_color          = ! empty( $bb['color'] ) ? sanitize_hex_color( (string) $bb['color'] ) : '';
+		$bb_width          = ! empty( $bb['width'] ) ? $sanitize_css_dimension( $bb['width'] ) : '';
+		$bb_radius         = ! empty( $bb['radius'] ) ? $sanitize_css_dimension( $bb['radius'] ) : '';
+		$css_button_hover .= $bb_color ? 'border-color:' . $bb_color . ';' : '';
+		$css_button_hover .= ! empty( $bb['style'] ) && in_array( $bb['style'], $allowed_border_styles, true ) ? 'border-style:' . $bb['style'] . ';' : '';
+		$css_button_hover .= '' !== $bb_width ? 'border-width:' . $bb_width . ';' : '';
+		$css_button_hover .= '' !== $bb_radius ? 'border-radius:' . $bb_radius . ';' : '';
+	}
+
+	// Input padding.
+	if ( ! empty( $attributes['inputPadding'] ) && is_array( $attributes['inputPadding'] ) ) {
+		$ip         = $attributes['inputPadding'];
+		$top        = $normalize_padding_value( $ip['top'] ?? '' );
+		$right      = $normalize_padding_value( $ip['right'] ?? '' );
+		$bottom     = $normalize_padding_value( $ip['bottom'] ?? '' );
+		$left       = $normalize_padding_value( $ip['left'] ?? '' );
+		$css_input .= "padding:{$top} {$right} {$bottom} {$left};";
+	}
+
+	// Button padding.
+	if ( ! empty( $attributes['buttonPadding'] ) && is_array( $attributes['buttonPadding'] ) ) {
+		$bp          = $attributes['buttonPadding'];
+		$top         = $normalize_padding_value( $bp['top'] ?? '' );
+		$right       = $normalize_padding_value( $bp['right'] ?? '' );
+		$bottom      = $normalize_padding_value( $bp['bottom'] ?? '' );
+		$left        = $normalize_padding_value( $bp['left'] ?? '' );
+		$css_button .= "padding:{$top} {$right} {$bottom} {$left};";
+	}
+
+	// Hover colors.
+	$input_hover_bg = ! empty( $attributes['inputHoverColor'] ) ? sanitize_hex_color( (string) $attributes['inputHoverColor'] ) : '';
+	if ( $input_hover_bg ) {
+		$css_input_hover .= 'background-color: ' . $input_hover_bg . ' !important;';
+	}
+	$btn_hover_bg = ! empty( $attributes['buttonHoverColor'] ) ? sanitize_hex_color( (string) $attributes['buttonHoverColor'] ) : '';
+	if ( $btn_hover_bg ) {
+		$css_button_hover .= 'background-color: ' . $btn_hover_bg . ' !important;';
+	}
+
+	$block_id = sanitize_html_class( $block_id );
+
+	$css = "
+#{$block_id}.bandcamp-form button { {$css_button} }
+#{$block_id}.bandcamp-form button:hover { {$css_button_hover} }
+#{$block_id}.bandcamp-form input { {$css_input} }
+#{$block_id}.bandcamp-form input:hover { {$css_input_hover} }
 ";
 
-//if ( !$is_editor ) {
-//	wp_add_inline_style( 'mds-bandcamp-bandcamp-form-style', $css );
-//} else {
-	echo "<style>".wp_kses($css,[])."</style>";
-//}
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////?>
-
-<div <?php echo wp_kses_post(!$is_editor ? $wrapper_attributes : 'id="'.$anchor.'"'); ?>>
-    <div id="<?php echo esc_attr($blockID); ?>" class="bandcamp-form bandcamp-form-layout-<?php echo esc_attr( $layout_style ); ?>">
-        <form action="<?php echo esc_url( 'https://www.bandcamp.com/yum?' ); ?>" method="get">
-			<label for="<?php echo esc_attr($blockID); ?>-bandcamp-code"><?php esc_html_e( 'Download Code', 'mds-bandcamp-integration' ); ?></label>
-            <input id="<?php echo esc_attr($blockID); ?>-bandcamp-code" type="text" name="code" placeholder="<?php echo esc_attr( $input_placeholder_text ); ?>" />
-            <button <?php echo esc_attr($is_editor ? 'disabled' : ''); ?> class="wp-element-button" type="submit">
-                <?php echo esc_html( $button_text ); ?>
-            </button>
-        </form>
-    </div>
+	echo '<style>' . wp_kses( $css, array() ) . '</style>';
+	?>
+<div <?php echo wp_kses_post( ! $is_editor ? $wrapper_attributes : 'id="' . $anchor . '"' ); ?>>
+	<div id="<?php echo esc_attr( $block_id ); ?>" class="bandcamp-form bandcamp-form-layout-<?php echo esc_attr( (string) $layout_style ); ?>">
+		<form action="<?php echo esc_url( 'https://www.bandcamp.com/yum?' ); ?>" method="get">
+			<label for="<?php echo esc_attr( $block_id ); ?>-bandcamp-code"><?php esc_html_e( 'Download Code', 'mds-bandcamp-integration' ); ?></label>
+			<input id="<?php echo esc_attr( $block_id ); ?>-bandcamp-code" type="text" name="code" placeholder="<?php echo esc_attr( (string) $input_placeholder_text ); ?>" />
+			<button <?php echo esc_attr( $is_editor ? 'disabled' : '' ); ?> class="wp-element-button" type="submit">
+				<?php echo esc_html( (string) $button_text ); ?>
+			</button>
+		</form>
+	</div>
 </div>
+	<?php
+} )( is_array( $attributes ?? null ) ? $attributes : array() );

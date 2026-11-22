@@ -2,15 +2,16 @@
 /**
  * Bandcamp player wrapper.
  *
- * @package MDS_Bandcamp_Integration
+ * @package MDS\Bandcamp
+ * @since   1.0.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-$allowed_html           = wp_kses_allowed_html( 'post' );
-$allowed_html['iframe'] = array(
+$mds_bc_allowed_html           = wp_kses_allowed_html( 'post' );
+$mds_bc_allowed_html['iframe'] = array(
 	'allow'             => true,
 	'allowfullscreen'   => true,
 	'allowtransparency' => true,
@@ -28,4 +29,4 @@ $allowed_html['iframe'] = array(
 	'width'             => true,
 );
 ?>
-<div class="mds-bandcamp-player-wrapper"><?php echo wp_kses( $shortcode_html, $allowed_html ); ?></div>
+<div class="mds-bandcamp-player-wrapper"><?php echo wp_kses( $shortcode_html, $mds_bc_allowed_html ); ?></div>

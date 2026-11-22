@@ -96,7 +96,7 @@
 		);
 	}
 
-	window.mdsBandcampUseReleasePicker = function (config) {
+	window.mdsBcUseReleasePicker = function (config) {
 		var enabled = config.enabled !== false;
 		var searchState = wp.element.useState('');
 		var search = searchState[0];
@@ -156,7 +156,7 @@
 					}
 				}
 			}),
-			window.mdsBandcampDebug && config.debugLabel ? el(TextControl, {
+			window.mdsBcDebug && config.debugLabel ? el(TextControl, {
 				label: config.debugLabel,
 				help: __('Shown because WP_DEBUG is enabled. The block renders from this stored value.', 'mds-bandcamp-integration'),
 				value: value,
@@ -194,7 +194,7 @@
 	 * @param {string}   [config.debugLabel] Label for the WP_DEBUG read-only snapshot field.
 	 * @return {Object} React element rendering the Artist picker controls.
 	 */
-	window.mdsBandcampUseArtistPicker = function (config) {
+	window.mdsBcUseArtistPicker = function (config) {
 		var searchState = wp.element.useState('');
 		var search = searchState[0];
 		var setSearch = searchState[1];
@@ -279,7 +279,7 @@
 				variant: 'secondary',
 				onClick: function () { config.onSelect(null); }
 			}, __('Use current context', 'mds-bandcamp-integration')) : null,
-			window.mdsBandcampDebug && config.debugLabel ? el(TextControl, {
+			window.mdsBcDebug && config.debugLabel ? el(TextControl, {
 				label: config.debugLabel,
 				help: __('Shown because WP_DEBUG is enabled. The block resolves the artist discography from this value.', 'mds-bandcamp-integration'),
 				value: debugValue,

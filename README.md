@@ -5,8 +5,9 @@ admin settings, REST metadata support, and MDS Release Manager integration.
 
 ## Requirements
 
-- WordPress 6.3 or newer
+- WordPress 7.0 or newer (tested up to 7.x)
 - PHP 8.0 or newer
+- Composer (for PSR-4 autoloading and WPCS linting)
 - MDS Release Manager is optional
   - Without it, the six blocks, shortcode, settings, and REST endpoint remain available.
   - Release meta-box and release-page integration require MDS Release Manager.
@@ -32,7 +33,7 @@ display as "Title — Artist". Picking a release copies its album ID and URL int
 the block, and a read-only snapshot field is shown when `WP_DEBUG` is enabled.
 
 The Discography block (`mds-bandcamp/bandcamp-discography`) uses a searchable
-Artist picker (`window.mdsBandcampUseArtistPicker`) that lists published
+Artist picker (`window.mdsBcUseArtistPicker`) that lists published
 Artists with a configured **Bandcamp Artist URL** (set in the **Bandcamp
 Integration** meta box on the Artist edit screen and preloaded via the
 `mds_rm_artist_picker_item` filter). Leaving the Artist selection blank
@@ -60,24 +61,25 @@ filter and search in memory without extra REST calls.
 
 ## Class Layout
 
-Production classes use the `MDS_Bandcamp_` prefix and are grouped by function:
+Production classes use Composer PSR-4 autoloading under the `MDS\Bandcamp\` root namespace in `src/`:
 
-- `includes/admin/` and `includes/admin/views/`: admin interfaces and plugin-owned views.
-- `includes/api/`: Bandcamp page fetching and REST endpoints.
-- `includes/core/`: cache, dependencies, helpers, logging, templates, and utilities.
-- `includes/blocks/`: registration of blocks stored under `blocks/`.
-- `includes/frontend/`: frontend integration and asset registration.
-- `includes/migrations/`: legacy settings, shortcode metadata, and block namespace migration.
-- `templates/`, `css/`, and `js/`: frontend template fallback and shared assets.
+- `src/Admin/`: `Admin` (Release/Artist meta boxes & AJAX verifier) and `AdminInterface` (settings page & MDS RM tab).
+- `src/Api/`: `BandcampApi` (Bandcamp page fetching & parsing) and `RestApi` (REST endpoint & catalog enrichment).
+- `src/Core/`: `Cache`, `Dependencies`, `Helpers`, `Logging`, `Templates`, and `Utilities`.
+- `src/Blocks/` and `blocks/`: block registration (`Blocks`) and the six block implementations.
+- `src/Frontend/`: `Frontend` (Audio Player Manager & Release Links filter) and `Assets` (script/style registration).
+- `src/Migrations/`: `Migration` (legacy shortcode/player migration) and `BlockMigration` (batched block namespace migration).
+- `templates/`, `css/`, and `js/`: frontend template fallback (`templates/frontend-widget.php`), plugin-owned admin meta-box view (`templates/admin/admin-settings.php`), and shared assets.
 
 The template loader checks `mds-bandcamp-integration/<template>` with WordPress
 `locate_template()`, which selects a child-theme override before a parent-theme
-override, then falls back to the plugin copy. The release meta-box view is
-plugin-owned at `includes/admin/views/admin-settings.php`.
+override, then falls back to the plugin copy. The release/artist meta-box view is
+plugin-owned at `templates/admin/admin-settings.php`.
 
-Public class names, aliases, hooks, block names, and stored attribute schemas
-are preserved for compatibility. The entrypoint loads classes from the
-functional folders and registers each hook-owning class once.
+Stored options, post meta keys, block names (`mds-bandcamp/*`), `[bandcamp]`
+shortcode, and MDS Release Manager hook contracts are preserved for backwards
+compatibility. The entrypoint loads `vendor/autoload.php` and registers each
+hook-owning class once.
 
 ## External services and data
 
@@ -123,6 +125,13 @@ and post meta:
   is deactivated; its settings option is not deleted.
 
 ## Development
+
+Install Composer dependencies (PSR-4 autoloader + WPCS/PHPCompatibilityWP):
+
+```powershell
+composer install
+composer phpcs
+```
 
 Run the focused standalone suites from the plugin root:
 

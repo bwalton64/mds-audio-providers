@@ -2,21 +2,34 @@
 /**
  * REST API endpoints for MDS Bandcamp Integration.
  *
- * @package MDS_Bandcamp_Integration
+ * @package MDS\Bandcamp
+ * @since   1.0.0
  */
+
+declare(strict_types=1);
+
+namespace MDS\Bandcamp\Api;
+
+use MDS\Bandcamp\Core\Helpers;
+use MDS_RM_Release_Search;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Registers REST API routes for Bandcamp data fetching.
+ * Registers REST API routes and editor catalog enrichment filters for Bandcamp data.
  *
  * @since 1.0.0
  */
-final class MDS_Bandcamp_REST_API {
+final class RestApi {
 	/**
 	 * Register REST API hooks.
+	 *
+	 * @since 1.0.0
 	 *
 	 * @return void
 	 */
@@ -30,19 +43,20 @@ final class MDS_Bandcamp_REST_API {
 	 * Enriches preloaded Release Manager editor catalog records with Bandcamp album metadata.
 	 *
 	 * @since 1.1.0
-	 * @param array $item Picker record with id, title, artist, and upc.
-	 * @param mixed $post Release WP_Post object.
-	 * @return array Enriched picker record.
+	 *
+	 * @param array<string, mixed> $item Picker record with id, title, artist, and upc.
+	 * @param mixed                $post Release WP_Post object.
+	 * @return array<string, mixed> Enriched picker record.
 	 */
 	public static function enrich_release_picker_item( array $item, $post ): array {
 		$post_id = isset( $post->ID ) ? (int) $post->ID : (int) ( $item['id'] ?? 0 );
 		if ( $post_id <= 0 ) {
 			return $item;
 		}
-		$album_id          = MDS_Bandcamp_Helpers::get_album_id( $post_id );
+		$album_id          = Helpers::get_album_id( $post_id );
 		$item['album_id']  = $album_id > 0 ? (string) $album_id : '';
-		$item['url']       = $album_id > 0 ? MDS_Bandcamp_Helpers::get_release_url( $post_id ) : '';
-		$item['subdomain'] = $album_id > 0 ? MDS_Bandcamp_Helpers::get_release_subdomain( $post_id ) : '';
+		$item['url']       = $album_id > 0 ? Helpers::get_release_url( $post_id ) : '';
+		$item['subdomain'] = $album_id > 0 ? Helpers::get_release_subdomain( $post_id ) : '';
 		return $item;
 	}
 
@@ -50,17 +64,18 @@ final class MDS_Bandcamp_REST_API {
 	 * Enriches preloaded Release Manager editor Artist records with Bandcamp Artist URL metadata.
 	 *
 	 * @since 1.1.0
-	 * @param array $item   Artist picker record with id, title, and uuid.
-	 * @param mixed $artist Artist WP_Post object.
-	 * @return array Enriched Artist picker record.
+	 *
+	 * @param array<string, mixed> $item   Artist picker record with id, title, and uuid.
+	 * @param mixed                $artist Artist WP_Post object.
+	 * @return array<string, mixed> Enriched Artist picker record.
 	 */
 	public static function enrich_artist_picker_item( array $item, $artist ): array {
 		$artist_id = isset( $artist->ID ) ? (int) $artist->ID : (int) ( $item['id'] ?? 0 );
 		if ( $artist_id <= 0 ) {
 			return $item;
 		}
-		$item['artist_url'] = MDS_Bandcamp_Helpers::get_artist_url( $artist_id );
-		$item['subdomain']  = MDS_Bandcamp_Helpers::get_artist_subdomain( $artist_id );
+		$item['artist_url'] = Helpers::get_artist_url( $artist_id );
+		$item['subdomain']  = Helpers::get_artist_subdomain( $artist_id );
 		return $item;
 	}
 
@@ -68,6 +83,7 @@ final class MDS_Bandcamp_REST_API {
 	 * Register the editor release-search route.
 	 *
 	 * @since 1.1.0
+	 *
 	 * @return void
 	 */
 	public static function register_routes(): void {
@@ -98,7 +114,9 @@ final class MDS_Bandcamp_REST_API {
 	/**
 	 * Check whether the current user can access Bandcamp metadata.
 	 *
-	 * @return bool
+	 * @since 1.0.0
+	 *
+	 * @return bool Whether the user has edit_posts capability.
 	 */
 	public static function check_permissions(): bool {
 		return current_user_can( 'edit_posts' );
@@ -115,7 +133,7 @@ final class MDS_Bandcamp_REST_API {
 	 * @since 1.1.0
 	 *
 	 * @param WP_REST_Request $request REST request.
-	 * @return WP_REST_Response
+	 * @return WP_REST_Response|array<string, mixed> REST response payload.
 	 */
 	public static function handle_releases_request( WP_REST_Request $request ) {
 		$items = array();
@@ -126,7 +144,7 @@ final class MDS_Bandcamp_REST_API {
 			$page   = max( 1, absint( $request->get_param( 'page' ) ) );
 			$found  = array();
 			foreach ( MDS_RM_Release_Search::query( $search ) as $post ) {
-				if ( MDS_Bandcamp_Helpers::get_album_id( $post->ID ) > 0 ) {
+				if ( Helpers::get_album_id( (int) $post->ID ) > 0 ) {
 					$found[] = $post;
 				}
 			}
@@ -137,9 +155,9 @@ final class MDS_Bandcamp_REST_API {
 					'id'        => $item['id'],
 					'title'     => $item['title'],
 					'artist'    => $item['artist'],
-					'album_id'  => (string) MDS_Bandcamp_Helpers::get_album_id( (int) $item['id'] ),
-					'url'       => MDS_Bandcamp_Helpers::get_release_url( (int) $item['id'] ),
-					'subdomain' => MDS_Bandcamp_Helpers::get_release_subdomain( (int) $item['id'] ),
+					'album_id'  => (string) Helpers::get_album_id( (int) $item['id'] ),
+					'url'       => Helpers::get_release_url( (int) $item['id'] ),
+					'subdomain' => Helpers::get_release_subdomain( (int) $item['id'] ),
 				);
 			}
 		}
@@ -152,4 +170,3 @@ final class MDS_Bandcamp_REST_API {
 		);
 	}
 }
-

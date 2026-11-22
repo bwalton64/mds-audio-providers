@@ -2,7 +2,8 @@
 /**
  * Bandcamp release and artist settings meta-box template.
  *
- * @package MDS_Bandcamp_Integration
+ * @package MDS\Bandcamp
+ * @since   1.0.0
  */
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -21,18 +22,18 @@ echo wp_kses(
 	)
 );
 
-$is_artist = ! empty( $is_artist_metabox );
+$mds_bc_is_artist = ! empty( $is_artist_metabox );
 ?>
-<?php if ( $is_artist ) : ?>
+<?php if ( $mds_bc_is_artist ) : ?>
 <table class="form-table">
 	<tr>
-		<th><label for="mds_bandcamp_artist_url"><?php esc_html_e( 'Bandcamp Artist URL', 'mds-bandcamp-integration' ); ?></label></th>
+		<th><label for="mds_bc_artist_url"><?php esc_html_e( 'Bandcamp Artist URL', 'mds-bandcamp-integration' ); ?></label></th>
 		<td>
 			<div style="display: flex; gap: 10px; align-items: flex-start;">
 				<input
 					type="url"
-					id="mds_bandcamp_artist_url"
-					name="mds_bandcamp_artist_url"
+					id="mds_bc_artist_url"
+					name="mds_bc_artist_url"
 					value="<?php echo esc_attr( $url ); ?>"
 					class="regular-text"
 					placeholder="<?php echo esc_attr( 'https://artist.bandcamp.com' ); ?>"
@@ -40,7 +41,7 @@ $is_artist = ! empty( $is_artist_metabox );
 				/>
 				<button
 					type="button"
-					id="mds_bandcamp_verify_artist_btn"
+					id="mds_bc_verify_artist_btn"
 					class="button button-secondary"
 					<?php disabled( ! $is_bandcamp_active ); ?>
 				><?php esc_html_e( 'Verify', 'mds-bandcamp-integration' ); ?></button>
@@ -54,16 +55,16 @@ $is_artist = ! empty( $is_artist_metabox );
 				}
 				?>
 			</p>
-			<div id="mds_bandcamp_status" style="margin-top: 10px; display: none;"></div>
+			<div id="mds_bc_status" style="margin-top: 10px; display: none;"></div>
 		</td>
 	</tr>
 	<tr>
-		<th><label for="mds_bandcamp_artist_subdomain"><?php esc_html_e( 'Artist Subdomain', 'mds-bandcamp-integration' ); ?></label></th>
+		<th><label for="mds_bc_artist_subdomain"><?php esc_html_e( 'Artist Subdomain', 'mds-bandcamp-integration' ); ?></label></th>
 		<td>
 			<input
 				type="text"
-				id="mds_bandcamp_artist_subdomain"
-				name="mds_bandcamp_artist_subdomain"
+				id="mds_bc_artist_subdomain"
+				name="mds_bc_artist_subdomain"
 				value="<?php echo esc_attr( $artist_subdomain ?? '' ); ?>"
 				class="regular-text"
 				readonly
@@ -77,13 +78,13 @@ $is_artist = ! empty( $is_artist_metabox );
 <?php else : ?>
 <table class="form-table">
 	<tr>
-		<th><label for="mds_bandcamp_url"><?php esc_html_e( 'Bandcamp Release URL', 'mds-bandcamp-integration' ); ?></label></th>
+		<th><label for="mds_bc_url"><?php esc_html_e( 'Bandcamp Release URL', 'mds-bandcamp-integration' ); ?></label></th>
 		<td>
 			<div style="display: flex; gap: 10px; align-items: flex-start;">
 				<input
 					type="url"
-					id="mds_bandcamp_url"
-					name="mds_bandcamp_url"
+					id="mds_bc_url"
+					name="mds_bc_url"
 					value="<?php echo esc_attr( $url ); ?>"
 					class="regular-text"
 					placeholder="<?php echo esc_attr( 'https://artist.bandcamp.com/album/album-name' ); ?>"
@@ -91,7 +92,7 @@ $is_artist = ! empty( $is_artist_metabox );
 				/>
 				<button
 					type="button"
-					id="mds_bandcamp_verify_btn"
+					id="mds_bc_verify_btn"
 					class="button button-secondary"
 					<?php disabled( ! $is_bandcamp_active ); ?>
 				><?php esc_html_e( 'Verify', 'mds-bandcamp-integration' ); ?></button>
@@ -105,17 +106,17 @@ $is_artist = ! empty( $is_artist_metabox );
 				}
 				?>
 			</p>
-			<div id="mds_bandcamp_status" style="margin-top: 10px; display: none;"></div>
+			<div id="mds_bc_status" style="margin-top: 10px; display: none;"></div>
 		</td>
 	</tr>
 	<tr>
-		<th><label for="mds_bandcamp_album_id">Album ID</label></th>
+		<th><label for="mds_bc_album_id"><?php esc_html_e( 'Album ID', 'mds-bandcamp-integration' ); ?></label></th>
 		<td>
 			<input
 				type="text"
-				id="mds_bandcamp_album_id"
-				name="mds_bandcamp_album_id"
-				value="<?php echo esc_attr( $album_id ); ?>"
+				id="mds_bc_album_id"
+				name="mds_bc_album_id"
+				value="<?php echo esc_attr( (string) $album_id ); ?>"
 				class="regular-text"
 				readonly
 			/>

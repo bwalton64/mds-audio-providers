@@ -1,12 +1,12 @@
 (function ($) {
 	$(document).ready(function () {
-		const $urlInput = $('#mds_bandcamp_url');
-		const $albumIdInput = $('#mds_bandcamp_album_id');
-		const $verifyBtn = $('#mds_bandcamp_verify_btn');
-		const $artistUrlInput = $('#mds_bandcamp_artist_url');
-		const $artistSubdomainInput = $('#mds_bandcamp_artist_subdomain');
-		const $verifyArtistBtn = $('#mds_bandcamp_verify_artist_btn');
-		const $statusDiv = $('#mds_bandcamp_status');
+		const $urlInput = $('#mds_bc_url');
+		const $albumIdInput = $('#mds_bc_album_id');
+		const $verifyBtn = $('#mds_bc_verify_btn');
+		const $artistUrlInput = $('#mds_bc_artist_url');
+		const $artistSubdomainInput = $('#mds_bc_artist_subdomain');
+		const $verifyArtistBtn = $('#mds_bc_verify_artist_btn');
+		const $statusDiv = $('#mds_bc_status');
 
 		$verifyBtn.on('click', function () {
 			const url = $urlInput.val().trim();
@@ -36,11 +36,11 @@
 			$statusDiv.hide();
 
 			$.ajax({
-				url: mdsBandcampMetabox.ajaxUrl,
+				url: mdsBcMetabox.ajaxUrl,
 				type: 'POST',
 				data: {
-					action: 'mds_bandcamp_verify_url',
-					nonce: mdsBandcampMetabox.nonce,
+					action: 'mds_bc_verify_url',
+					nonce: mdsBcMetabox.nonce,
 					url: url,
 					mode: mode,
 				},
@@ -92,7 +92,7 @@
 				.html('<p><strong>' + (type === 'success' ? '✓ ' : '✗ ') + message + '</strong></p>')
 				.slideDown();
 
-			// Auto-hide success messages after 5 seconds
+			// Auto-hide success messages after 5 seconds.
 			if ('success' === type) {
 				setTimeout(function () {
 					$statusDiv.slideUp();

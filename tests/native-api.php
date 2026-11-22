@@ -6,7 +6,7 @@
  */
 
 define( 'ABSPATH', __DIR__ . DIRECTORY_SEPARATOR );
-define( 'MDS_BANDCAMP_PLUGIN_BASENAME', 'mds-bandcamp-integration/mds-bandcamp-integration.php' );
+define( 'MDS_BC_PLUGIN_BASENAME', 'mds-bandcamp-integration/mds-bandcamp-integration.php' );
 
 $hooks = array();
 $registered_setting = null;
@@ -175,63 +175,66 @@ final class WP_REST_Server
     const READABLE  = 'GET';
 }
 
-final class MDS_Bandcamp_Cache
+function wp_json_encode( $data, $flags = 0 )
 {
-    public static function get_transients_list( $search )
-    {
-        return json_encode( array() );
-    }
+    return json_encode( $data, $flags );
 }
 
-final class MDS_Bandcamp_Logging
+function wp_date( $format, $timestamp )
 {
-    public static function log( $level, $message, $context = array() )
-    {
-        return true;
-    }
+    return gmdate( $format, $timestamp );
 }
 
-require __DIR__ . '/../includes/admin/class-mds-bandcamp-admin.php';
-require __DIR__ . '/../includes/admin/class-mds-bandcamp-admin-interface.php';
-require __DIR__ . '/../includes/core/class-mds-bandcamp-dependencies.php';
-require __DIR__ . '/../includes/core/class-mds-bandcamp-helpers.php';
-require __DIR__ . '/../includes/api/class-mds-bandcamp-api.php';
-require __DIR__ . '/../includes/api/class-mds-bandcamp-rest-api.php';
-require __DIR__ . '/../includes/blocks/class-mds-bandcamp-blocks.php';
+function maybe_serialize( $value )
+{
+    return is_array( $value ) || is_object( $value ) ? serialize( $value ) : $value;
+}
 
-MDS_Bandcamp_Admin_Interface::register_hooks();
-if ( ! in_array( array( 'MDS_Bandcamp_Admin_Interface', 'register_release_manager_tab' ), $hooks['mds_rm_site_settings_tabs'], true ) ) {
+final class Test_Native_WPDB
+{
+    public $options = 'wp_options';
+    public function esc_like( $value ) { return $value; }
+    public function prepare( $query, ...$args ) { return $query; }
+    public function get_results( $query ) { return array(); }
+}
+
+$wpdb = new Test_Native_WPDB();
+
+require __DIR__ . '/../vendor/autoload.php';
+
+MDS\Bandcamp\Admin\AdminInterface::register_hooks();
+if ( ! in_array( array( MDS\Bandcamp\Admin\AdminInterface::class, 'register_release_manager_tab' ), $hooks['mds_rm_site_settings_tabs'], true ) ) {
     throw new RuntimeException( 'Release Manager settings tab hook is missing.' );
 }
-$tabs = MDS_Bandcamp_Admin_Interface::register_release_manager_tab( array() );
+$tabs = MDS\Bandcamp\Admin\AdminInterface::register_release_manager_tab( array() );
 if ( ! isset( $tabs['bandcamp']['render'] ) || ! is_callable( $tabs['bandcamp']['render'] ) ) {
     throw new RuntimeException( 'Bandcamp settings tab is not callable.' );
 }
-if ( ! in_array( array( 'MDS_Bandcamp_Admin_Interface', 'register_settings' ), $hooks['admin_init'], true ) ) {
+if ( ! in_array( array( MDS\Bandcamp\Admin\AdminInterface::class, 'register_settings' ), $hooks['admin_init'], true ) ) {
     throw new RuntimeException( 'Settings registration hook is missing.' );
 }
-MDS_Bandcamp_Admin_Interface::register_settings();
+MDS\Bandcamp\Admin\AdminInterface::register_settings();
 if (
     $registered_setting !== array(
         'mds_bandcamp',
         'mds_bandcamp__settings',
         array(
             'type'              => 'array',
-            'sanitize_callback' => array( 'MDS_Bandcamp_Admin_Interface', 'sanitize_settings' ),
+            'sanitize_callback' => array( MDS\Bandcamp\Admin\AdminInterface::class, 'sanitize_settings' ),
         ),
     )
 ) {
     throw new RuntimeException( 'Existing settings option was not registered.' );
 }
 if (
-    MDS_Bandcamp_Admin_Interface::sanitize_settings( array( 'transient' => 5000 ) ) !== array( 'transient' => 1440 )
-    || MDS_Bandcamp_Admin_Interface::sanitize_settings( array( 'transient' => 0 ) ) !== array( 'transient' => 1 )
-    || MDS_Bandcamp_Admin_Interface::sanitize_settings( array( 'transient' => 60 ) ) !== array( 'transient' => 60 )
+    MDS\Bandcamp\Admin\AdminInterface::sanitize_settings( array( 'transient' => 5000 ) ) !== array( 'transient' => 1440 )
+    || MDS\Bandcamp\Admin\AdminInterface::sanitize_settings( array( 'transient' => 0 ) ) !== array( 'transient' => 1 )
+    || MDS\Bandcamp\Admin\AdminInterface::sanitize_settings( array( 'transient' => 60 ) ) !== array( 'transient' => 60 )
 ) {
     throw new RuntimeException( 'Settings sanitization bounds changed.' );
 }
 ob_start();
-MDS_Bandcamp_Admin_Interface::render_settings_page();
+MDS\Bandcamp\Admin\AdminInterface::render_settings_page();
 $settings_html = ob_get_clean();
 if (
     'mds_bandcamp' !== $settings_group
@@ -242,48 +245,53 @@ if (
     throw new RuntimeException( 'Settings form did not preserve its option and value.' );
 }
 
-if ( MDS_Bandcamp_Dependencies::is_mds_active() || 'mds-release-manager/mds-release-manager.php' !== $active_plugin ) {
+if ( MDS\Bandcamp\Core\Dependencies::is_mds_active() || 'mds-release-manager/mds-release-manager.php' !== $active_plugin ) {
     throw new RuntimeException( 'Inactive dependency check failed.' );
 }
 $active = true;
-if ( ! MDS_Bandcamp_Dependencies::is_mds_active() ) {
+if ( ! MDS\Bandcamp\Core\Dependencies::is_mds_active() ) {
     throw new RuntimeException( 'Active dependency check failed.' );
 }
 
-$links = MDS_Bandcamp_Blocks::plugin_links( array( 'existing' ) );
+$links = MDS\Bandcamp\Blocks\Blocks::plugin_links( array( 'existing' ) );
 if ( false === strpos( $links[0], 'https://example.test/wp-admin/options-general.php?page=mds_bandcamp' ) || 'existing' !== $links[1] ) {
     throw new RuntimeException( 'Settings link was not generated from the admin URL.' );
 }
 
-$body = MDS_Bandcamp_API::fetch_bandcamp_page( 'https://artist.bandcamp.com/album/example' );
+$body = MDS\Bandcamp\Api\BandcampApi::fetch_bandcamp_page( 'https://artist.bandcamp.com/album/example' );
 if ( '<html>OK</html>' !== $body || count( $requests ) !== 1 || 10 !== $requests[0][1]['timeout'] ) {
     throw new RuntimeException( 'Safe Bandcamp request failed.' );
 }
-$bad = MDS_Bandcamp_API::fetch_bandcamp_page( 'https://example.test/' );
+$bad = MDS\Bandcamp\Api\BandcampApi::fetch_bandcamp_page( 'https://example.test/' );
 if ( empty( $bad['error'] ) || count( $requests ) !== 1 ) {
     throw new RuntimeException( 'Non-Bandcamp URL was not rejected.' );
 }
-$bad = MDS_Bandcamp_API::fetch_bandcamp_page( 'http://artist.bandcamp.com/' );
+$bad = MDS\Bandcamp\Api\BandcampApi::fetch_bandcamp_page( 'http://artist.bandcamp.com/' );
 if ( empty( $bad['error'] ) || count( $requests ) !== 1 ) {
     throw new RuntimeException( 'Non-HTTPS Bandcamp URL was not rejected.' );
 }
 $http_response = array( 'code' => 404, 'body' => '' );
-$error = MDS_Bandcamp_API::fetch_bandcamp_page( 'https://artist.bandcamp.com/album/example' );
+$error = MDS\Bandcamp\Api\BandcampApi::fetch_bandcamp_page( 'https://artist.bandcamp.com/album/example' );
 if ( empty( $error['error'] ) || 'Bandcamp URL does not exist' !== $error['message'] ) {
     throw new RuntimeException( 'HTTP 404 was not handled.' );
 }
+$http_response = array( 'code' => 503, 'body' => 'Service Unavailable' );
+$error = MDS\Bandcamp\Api\BandcampApi::fetch_bandcamp_page( 'https://artist.bandcamp.com/album/example' );
+if ( empty( $error['error'] ) || 'Bandcamp HTTP error: 503' !== $error['message'] ) {
+    throw new RuntimeException( 'Non-2xx HTTP status was not handled.' );
+}
 $http_response = new WP_Error();
-$error = MDS_Bandcamp_API::fetch_bandcamp_page( 'https://artist.bandcamp.com/album/example' );
+$error = MDS\Bandcamp\Api\BandcampApi::fetch_bandcamp_page( 'https://artist.bandcamp.com/album/example' );
 if ( empty( $error['error'] ) || 'Request Error: Connection failed' !== $error['message'] ) {
     throw new RuntimeException( 'HTTP errors were not propagated.' );
 }
 
-MDS_Bandcamp_REST_API::register_routes();
+MDS\Bandcamp\Api\RestApi::register_routes();
 if (
     'mds-bandcamp/v1' !== $rest_route[0]
     || '/releases' !== $rest_route[1]
     || WP_REST_Server::READABLE !== $rest_route[2]['methods']
-    || array( 'MDS_Bandcamp_REST_API', 'check_permissions' ) !== $rest_route[2]['permission_callback']
+    || array( MDS\Bandcamp\Api\RestApi::class, 'check_permissions' ) !== $rest_route[2]['permission_callback']
     || 'sanitize_text_field' !== $rest_route[2]['args']['search']['sanitize_callback']
     || 'absint' !== $rest_route[2]['args']['page']['sanitize_callback']
 ) {
@@ -299,7 +307,7 @@ $subdomain_cases = array(
     ''                                                     => '',
 );
 foreach ( $subdomain_cases as $subdomain_url => $expected_subdomain ) {
-    if ( MDS_Bandcamp_Helpers::parse_bandcamp_subdomain( (string) $subdomain_url ) !== $expected_subdomain ) {
+    if ( MDS\Bandcamp\Core\Helpers::parse_bandcamp_subdomain( (string) $subdomain_url ) !== $expected_subdomain ) {
         throw new RuntimeException( 'Subdomain derivation failed for: ' . $subdomain_url );
     }
 }

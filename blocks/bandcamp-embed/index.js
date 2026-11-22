@@ -1,35 +1,16 @@
-var { useState, useEffect } = wp.element;
-var apiFetch = wp.apiFetch;
-var AlignmentToolbar = wp.blockEditor.AlignmentToolbar;
-var BlockControls = wp.blockEditor.BlockControls;
-var BorderControl = wp.components.BorderControl;
-var BoxControl = wp.components.BoxControl;
-var Button = wp.components.Button;
-var ButtonGroup = wp.components.ButtonGroup;
-var ColorPalette = wp.blockEditor.ColorPalette || wp.components.ColorPalette;
-var ColorPicker = wp.components.ColorPicker;
-var createElement = wp.element.createElement;
-var Fragment = wp.element.Fragment;
-var FontSizePicker  = wp.components.FontSizePicker;
-var InnerBlocks = wp.blockEditor.InnerBlocks;
-var InspectorControls = wp.blockEditor.InspectorControls;
-var MediaUpload = wp.blockEditor.MediaUpload;
-var MediaUploadCheck = wp.blockEditor.MediaUploadCheck;
-var PanelBody = wp.components.PanelBody;
-var registerBlockType = wp.blocks.registerBlockType;
-var RangeControl = wp.components.RangeControl;
-var RichText = wp.blockEditor.RichText;
-var SelectControl = wp.components.SelectControl;
-var ServerSideRender  = wp.serverSideRender;
-var TextareaControl = wp.components.TextareaControl;
-var TextControl = wp.components.TextControl;
-var ToggleControl = wp.components.ToggleControl;
-var Toolbar = wp.components.Toolbar;
-var UnitControl = wp.components.__experimentalUnitControl || wp.components.UnitControl;
-var useBlockProps = wp.blockEditor.useBlockProps;
-var useSelect = wp.data.useSelect;
-var Spinner = wp.components.Spinner;
-var Notice = wp.components.Notice;
+(function (wp) {
+	'use strict';
+	var createElement = wp.element.createElement;
+	var Fragment = wp.element.Fragment;
+	var registerBlockType = wp.blocks.registerBlockType;
+	var AlignmentToolbar = wp.blockEditor.AlignmentToolbar;
+	var BlockControls = wp.blockEditor.BlockControls;
+	var InspectorControls = wp.blockEditor.InspectorControls;
+	var useBlockProps = wp.blockEditor.useBlockProps;
+	var PanelBody = wp.components.PanelBody;
+	var SelectControl = wp.components.SelectControl;
+	var TextareaControl = wp.components.TextareaControl;
+	var ServerSideRender = wp.serverSideRender;
 
 registerBlockType('mds-bandcamp/bandcamp-embed', {
  	icon: 'album',
@@ -38,14 +19,7 @@ registerBlockType('mds-bandcamp/bandcamp-embed', {
         var attributes = props.attributes;
         var setAttributes = props.setAttributes;
 
-		useEffect(function () {
-			if (attributes.previewMode && typeof window.initBandcamp === 'function') {
-
-
-			}
-		}, [attributes.previewMode]);
-
-		var previewToggle = createElement(Fragment, null,
+var previewToggle = createElement(Fragment, null,
 			createElement(BlockControls, null,
 				createElement(AlignmentToolbar, {
 					value: attributes.textAlign,
@@ -97,3 +71,4 @@ registerBlockType('mds-bandcamp/bandcamp-embed', {
         return null; // Rendered server-side
     }
 });
+})(window.wp);

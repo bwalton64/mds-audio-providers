@@ -6,8 +6,8 @@
  */
 
 define( 'ABSPATH', __DIR__ . DIRECTORY_SEPARATOR );
-define( 'MDS_BANDCAMP_VERSION', '1.0.0' );
-define( 'MDS_BANDCAMP_PATH', dirname( __DIR__ ) . DIRECTORY_SEPARATOR );
+define( 'MDS_BC_VERSION', '1.0.0' );
+define( 'MDS_BC_PATH', dirname( __DIR__ ) . DIRECTORY_SEPARATOR );
 
 $GLOBALS['settings_option'] = array();
 $GLOBALS['album_meta']      = array();
@@ -82,11 +82,7 @@ function wp_kses( $html, $allowed_html )
     return $html;
 }
 
-require MDS_BANDCAMP_PATH . 'includes/core/class-mds-bandcamp-helpers.php';
-require MDS_BANDCAMP_PATH . 'includes/core/class-mds-bandcamp-dependencies.php';
-require MDS_BANDCAMP_PATH . 'includes/core/class-mds-bandcamp-utilities.php';
-require MDS_BANDCAMP_PATH . 'includes/core/class-mds-bandcamp-templates.php';
-require MDS_BANDCAMP_PATH . 'includes/frontend/class-mds-bandcamp-frontend.php';
+require MDS_BC_PATH . 'vendor/autoload.php';
 
 function check_player( $condition, $message )
 {
@@ -98,20 +94,20 @@ function check_player( $condition, $message )
 // Markup supplied by an earlier extension is returned unchanged.
 $GLOBALS['album_meta'] = array( 'album_id' => 2334859609 );
 check_player(
-    '<audio></audio>' === MDS_Bandcamp_Frontend::filter_release_links_audio( '<audio></audio>', 92 ),
+    '<audio></audio>' === MDS\Bandcamp\Frontend\Frontend::filter_release_links_audio( '<audio></audio>', 92 ),
     'Earlier extension markup must be preserved.'
 );
 
 // A release without a saved Bandcamp album supplies no player.
 $GLOBALS['album_meta'] = array();
 check_player(
-    '' === MDS_Bandcamp_Frontend::filter_release_links_audio( '', 92 ),
+    '' === MDS\Bandcamp\Frontend\Frontend::filter_release_links_audio( '', 92 ),
     'Releases without Bandcamp data must not render a player.'
 );
 
 // A saved album renders the small player through the frontend-widget template.
 $GLOBALS['album_meta'] = array( 'album_id' => 2334859609 );
-$player = MDS_Bandcamp_Frontend::filter_release_links_audio( '', 92 );
+$player = MDS\Bandcamp\Frontend\Frontend::filter_release_links_audio( '', 92 );
 foreach ( array( 'mds-bandcamp-player-wrapper', 'album=2334859609', 'size=small', 'artwork=none', 'height: 42px' ) as $fragment ) {
     check_player( false !== strpos( $player, $fragment ), 'Player output is missing: ' . $fragment );
 }
@@ -119,17 +115,17 @@ foreach ( array( 'mds-bandcamp-player-wrapper', 'album=2334859609', 'size=small'
 // The release subdomain derives from the stored Bandcamp URL.
 $GLOBALS['album_meta'] = array( 'album_id' => 2334859609, 'url' => 'https://brianwalton.bandcamp.com/album/what-the-gold' );
 check_player(
-    'brianwalton' === MDS_Bandcamp_Helpers::get_release_subdomain( 92 ),
+    'brianwalton' === MDS\Bandcamp\Core\Helpers::get_release_subdomain( 92 ),
     'The release subdomain must derive from the stored Bandcamp URL.'
 );
 $GLOBALS['album_meta'] = array( 'album_id' => 2334859609 );
 check_player(
-    '' === MDS_Bandcamp_Helpers::get_release_subdomain( 92 ),
+    '' === MDS\Bandcamp\Core\Helpers::get_release_subdomain( 92 ),
     'A release without a stored URL must have no subdomain.'
 );
 
 // Audio Player Manager registration and declarative settings rendering.
-$registered = MDS_Bandcamp_Frontend::register_audio_player( array() );
+$registered = MDS\Bandcamp\Frontend\Frontend::register_audio_player( array() );
 check_player(
     isset( $registered['bandcamp'] )
     && is_callable( $registered['bandcamp']['render_callback'] )
@@ -137,7 +133,7 @@ check_player(
     'Bandcamp must register its player definition and declarative fields with the Audio Player Manager.'
 );
 
-$custom_rendered = MDS_Bandcamp_Frontend::render_audio_player(
+$custom_rendered = MDS\Bandcamp\Frontend\Frontend::render_audio_player(
     92,
     array(
         'size'      => 'large',
