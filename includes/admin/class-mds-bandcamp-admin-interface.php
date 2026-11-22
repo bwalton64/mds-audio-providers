@@ -39,6 +39,24 @@ final class MDS_Bandcamp_Admin_Interface {
 	 * @return void
 	 */
 	public static function register_settings(): void {
+		if ( class_exists( 'MDS_RM_Release_Meta' ) && method_exists( 'MDS_RM_Release_Meta', 'register_extension_meta' ) ) {
+			MDS_RM_Release_Meta::register_extension_meta( 'bandcamp_album_id' );
+			MDS_RM_Release_Meta::register_extension_meta(
+				'bandcamp_album_url',
+				array( 'sanitize_callback' => 'esc_url_raw' )
+			);
+			MDS_RM_Release_Meta::register_extension_meta(
+				'bandcamp_artist_url',
+				array( 'sanitize_callback' => 'esc_url_raw' ),
+				'artist'
+			);
+			MDS_RM_Release_Meta::register_extension_meta(
+				'bandcamp_artist_subdomain',
+				array(),
+				'artist'
+			);
+		}
+
 		register_setting(
 			self::$plugin_key,
 			self::$plugin_key . '__settings',
@@ -64,8 +82,7 @@ final class MDS_Bandcamp_Admin_Interface {
 		$transient = max( 1, min( 1440, $transient ) );
 
 		return array(
-			'transient'      => $transient,
-			'release_player' => ! empty( $settings['release_player'] ),
+			'transient' => $transient,
 		);
 	}
 
@@ -130,16 +147,6 @@ final class MDS_Bandcamp_Admin_Interface {
 		<form action="<?php echo esc_url( admin_url( 'options.php' ) ); ?>" method="post">
 			<table class="form-table" role="presentation">
 				<tbody>
-					<tr>
-						<th scope="row"><?php esc_html_e( 'Release Pages Player', 'mds-bandcamp-integration' ); ?></th>
-						<td>
-							<label>
-								<input type="checkbox" name="<?php echo esc_attr( self::$plugin_key ); ?>__settings[release_player]" value="1"<?php checked( ! isset( $settings['release_player'] ) || ! empty( $settings['release_player'] ) ); ?>>
-								<?php esc_html_e( 'Show the Bandcamp player in the Release Links block.', 'mds-bandcamp-integration' ); ?>
-							</label>
-							<p class="description"><?php esc_html_e( 'Displays the small album player for releases with a verified Bandcamp album. Requires MDS Release Manager.', 'mds-bandcamp-integration' ); ?></p>
-						</td>
-					</tr>
 					<tr>
 						<th scope="row"><?php esc_html_e( 'Transient Cache Length', 'mds-bandcamp-integration' ); ?></th>
 						<td>

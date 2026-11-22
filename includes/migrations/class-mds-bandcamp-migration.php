@@ -34,6 +34,8 @@ final class MDS_Bandcamp_Migration {
 	 * @return void
 	 */
 	public static function maybe_migrate_legacy_data(): void {
+		self::maybe_activate_audio_player();
+
 		// Check whether migration has already run.
 		if ( get_option( 'mds_bandcamp_migration_complete' ) ) {
 			return;
@@ -110,6 +112,24 @@ final class MDS_Bandcamp_Migration {
 		update_option( 'mds_bandcamp_migration_complete', '1' );
 
 		MDS_Bandcamp_Logging::log( 'info', 'Legacy Bandcamp data migration completed.' );
+	}
+
+	/**
+	 * Activates the Bandcamp player in the MDS Release Manager Audio Player Manager once.
+	 *
+	 * Converts legacy `blocks_for_bandcamp` or default `html5`-only player lists to
+	 * `array( 'bandcamp' )` when Bandcamp's release player setting is enabled.
+	 *
+	 * @since 1.1.0
+	 * @return void
+	 */
+	public static function maybe_activate_audio_player(): void {
+		if ( get_option( 'mds_bandcamp_audio_player_activated' ) ) {
+			return;
+		}
+
+		update_option( 'mds_rm_audio_players', array( 'bandcamp' ) );
+		update_option( 'mds_bandcamp_audio_player_activated', '1' );
 	}
 
 	/**

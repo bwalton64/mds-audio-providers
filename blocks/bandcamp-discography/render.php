@@ -13,7 +13,7 @@ $blockID = !empty( $attributes['blockID'] ) ? esc_attr( $attributes['blockID'] )
 $className = !empty( $attributes['className'] ) ? esc_attr( $attributes['className'] ) : '';
 $is_editor = defined( 'REST_REQUEST' ) && REST_REQUEST && isset( $_REQUEST['context'] ) && $_REQUEST['context'] === 'edit';
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-$artist_url =  $attributes['artist_url'] ?? '';
+$artist_url = MDS_Bandcamp_Helpers::resolve_discography_subdomain( $attributes, $block ?? null );
 $button_color = $attributes['button_color'] ?? '#171717';
 $button_text_color = $attributes['button_text_color'] ?? '#ffffff';
 $display_album_art = $attributes['display_album_art'] ?? true;

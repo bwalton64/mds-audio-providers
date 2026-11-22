@@ -33,6 +33,16 @@ $style_purchase_button_bgcolor = $attributes['style_purchase_button_bgcolor'] ??
 $style_purchase_button_textcolor = $attributes['style_purchase_button_textcolor'] ?? '#ffffff';
 $url = $attributes['url'] ?? false;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Fall back to the current release's verified Bandcamp album when the block has no selection.
+if ( empty( $albumID ) ) {
+	$mds_bandcamp_context_id    = MDS_Bandcamp_Helpers::resolve_context_release_id( $attributes, $block ?? null );
+	$mds_bandcamp_context_album = $mds_bandcamp_context_id ? MDS_Bandcamp_Helpers::get_album_id( $mds_bandcamp_context_id ) : 0;
+	if ( $mds_bandcamp_context_album > 0 ) {
+		$albumID = (string) $mds_bandcamp_context_album;
+		$url     = MDS_Bandcamp_Helpers::get_release_url( $mds_bandcamp_context_id );
+	}
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 $wrapper_attributes = get_block_wrapper_attributes([
 	'id' => $anchor
 ]);
@@ -77,9 +87,10 @@ if ($is_editor && !empty($data['cached'])) {
 
 	<section id="<?php echo esc_attr($blockID); ?>" class="bandcamp-merch">
 
+		<?php $package_exists = false; ?>
 		<?php if (!empty($data['packages'])) : ?>
 		<ul class="bandcamp-grid bandcamp-merch-layout-<?php echo esc_attr($layout_style); ?> bandcamp-columns-<?php echo esc_attr($layout_columns); ?>">
-			<?php $package_exists = false; $pI = 0;
+			<?php $pI = 0;
 				foreach ($data['packages'] as $package) : 
 					if (!$display_sold_out_items && $package['quantity_available'] < 1 && $package['quantity_available'] !== null) :
 						continue;

@@ -37,91 +37,33 @@ registerBlockType('mds-bandcamp/bandcamp-album', {
 		var attributes = props.attributes;
 		var setAttributes = props.setAttributes;
 
-		// lightweight local UI state
-		var _useState_loading = useState(false), loading = _useState_loading[0], setLoading = _useState_loading[1];
-		var _useState_error   = useState(''),    error   = _useState_error[0],   setError   = _useState_error[1];
-		var _useState_readonly = useState(false), isReadonly = _useState_readonly[0], setReadonly = _useState_readonly[1];
-
 		useEffect(() => {
 			if (!attributes.blockID) {
 				setAttributes({ blockID: 'wp-block-' + Math.random().toString(36).slice(2, 12) });
 			}
 		}, []);
-		
-		useEffect(function () {
-			setReadonly(!!attributes.albumID);
-		}, [attributes.albumID]);
 
-		// Call your REST route to read a <meta> tag from the Bandcamp page
-		function fetchAlbumId() {
-			var url  = attributes.url || '';
+		var editorStore = wp.data.select('core/editor');
+		var currentPostId = editorStore && editorStore.getCurrentPostId ? (editorStore.getCurrentPostId() || 0) : 0;
 
-			if ( ! url ) { return; }
-
-			setLoading(true); setError('');
-
-			apiFetch({
-				path: '/mds-bandcamp/v1/meta',
-				method: 'POST',
-				data: { url: url, name: 'bc-page-properties' }
-			}).then(function(res){
-				// expects { ok:true, value: '123456' }
-				var value = res && res.value ? String(res.value) : '';
-				setAttributes({ albumID: value });
-				setReadonly(true);
-				setLoading(false);
-			}).catch(function(e){
-				//setAttributes({ albumID: '' });
-				setReadonly(false);
-				setError(e && e.message ? e.message : 'Failed to fetch album ID.');
-				setLoading(false);
-			});
-		}
+		var releasePicker = window.mdsBandcampUseReleasePicker({
+			value: attributes.albumID,
+			label: 'Release',
+			help: 'Search published releases with a verified Bandcamp album by title or artist.',
+			enabled: props.isSelected,
+			debugLabel: 'Bandcamp Album ID',
+			mapValue: function (item) { return item.album_id; },
+			onSelect: function (item) {
+				setAttributes({
+					albumID: item && item.album_id ? String(item.album_id) : '',
+					url: item && item.url ? item.url : ''
+				});
+			}
+		});
 
 		var InspectorPanel = createElement(InspectorControls, null,
 			createElement(PanelBody, null,
-				createElement(TextareaControl, {
-					label: "Album URL",
-					value: attributes.url,
-					readOnly: isReadonly,
-					onChange: function (value) {
-						setAttributes({ albumID: '' });
-						//fetchAlbumId();
-						return setAttributes({ url: value });
-					},
-					style: {wordBreak:'break-all'},
-					rows:3					
-				}),
-				createElement('small',{},
-					'Enter album URL, then click "Fetch Album ID" to sync the album ID',
-					createElement('br'),
-					createElement('br')
-				),
-				!attributes.albumID && createElement(Button, {
-					variant: 'secondary',
-					onClick: fetchAlbumId,
-					style: {margin:"0 0 10px 0"},
-				}, 'Fetch Album ID'),
-				loading ? createElement(Spinner, null) : null,
-				error ? createElement(Notice, { status: 'error', isDismissible: false }, error) : null,
-
-				attributes.albumID && createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',margin:'0 0 10px 0'}}, 
-					createElement(Button,{style:{background:'green',color:'white',boxShadow:'none'},disabled:true},'✔ SYNCED'),
-					createElement(Button, {
-						variant: 'secondary',
-						onClick: function() { setAttributes({albumID: ''}); },
-						style: {margin:"0",color:"red",borderColor:"red",boxShadow:"inset 0 0 0 1px red"},
-					}, 'Clear'),	
-				),		
-				createElement(TextControl, {
-					label: "Album ID",
-					value: attributes.albumID,
-					readOnly: true,
-					onChange: function (value) {
-						return setAttributes({ albumID: value });
-					},
-					style: {opacity:'0.5'}
-				}),
+				releasePicker,
 				createElement(SelectControl, {
 					label: "Embed Type",
 					value: attributes.embedType,
@@ -167,7 +109,12 @@ registerBlockType('mds-bandcamp/bandcamp-album', {
 					label: 'Display Merchandise?',
 					checked: attributes.display_merch,
 					onChange: function(val) { setAttributes({ display_merch: val }); }
-				}),
+				})
+			)
+		);
+
+		var StylesPanel = createElement(InspectorControls, { group: 'styles' },
+			createElement(PanelBody, { title: 'Colors', initialOpen: true },
 				createElement( 'label', { className: 'bandcamp-label' }, 'Background Color' ),
 				createElement(ColorPalette, {
 					value: attributes.backgroundColor,
@@ -200,8 +147,6 @@ registerBlockType('mds-bandcamp/bandcamp-album', {
 					},
 					disableAlpha: false
 				}),
-
-
 				attributes.embedType == 'custom' && createElement( 'label', { className: 'bandcamp-label' }, 'Progress Bar Color' ),
 				attributes.embedType == 'custom' && createElement(ColorPalette, {
 					value: attributes.progressBarColor,
@@ -218,19 +163,18 @@ registerBlockType('mds-bandcamp/bandcamp-album', {
 					},
 					disableAlpha: false
 				})
-
-
-
 			)
 		);
 
 		return createElement(Fragment, null,
 			InspectorPanel,
+			StylesPanel,
 			createElement('div', useBlockProps(),
 				createElement(ServerSideRender, {
 					block: "mds-bandcamp/bandcamp-album",
 					httpMethod: "POST",
-					attributes: attributes
+					attributes: attributes,
+					urlQueryArgs: { post_id: currentPostId }
 				})
 			)
 		);

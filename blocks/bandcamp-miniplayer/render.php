@@ -30,6 +30,16 @@ $textColor = $attributes['textColor'] ?? '#ffffff';
 $trackNumber = $attributes['trackNumber'] ?? false;
 $url = $attributes['url'] ?? false;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// Fall back to the current release's verified Bandcamp album when the block has no selection.
+if ( empty( $albumID ) ) {
+	$mds_bandcamp_context_id    = MDS_Bandcamp_Helpers::resolve_context_release_id( $attributes, $block ?? null );
+	$mds_bandcamp_context_album = $mds_bandcamp_context_id ? MDS_Bandcamp_Helpers::get_album_id( $mds_bandcamp_context_id ) : 0;
+	if ( $mds_bandcamp_context_album > 0 ) {
+		$albumID = (string) $mds_bandcamp_context_album;
+		$url     = MDS_Bandcamp_Helpers::get_release_url( $mds_bandcamp_context_id );
+	}
+}
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 $wrapper_attributes = get_block_wrapper_attributes([
 	'id' => $anchor
 ]);
@@ -90,6 +100,10 @@ if ($is_editor && !empty($data['cached'])) {
 	echo '<span style="position:absolute;z-index:99;top:10px;right:10px;background:#1da0c3;color:#fff;font-size:10px;padding:3px 10px;border-radius:20px;display:inline-block;">' . esc_html__( 'CACHE', 'mds-bandcamp-integration' ) . '</span>';
 }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+$data['featured_track_mp3']    = $data['featured_track_mp3'] ?? '';
+$data['featured_track_title']  = $data['featured_track_title'] ?? '';
+$data['featured_track_artist'] = $data['featured_track_artist'] ?? ( $data['artist'] ?? '' );
 
 foreach ($data['tracks'] as $track) :
 	if (!empty($trackNumber) && $track['tracknum'] == $trackNumber) {

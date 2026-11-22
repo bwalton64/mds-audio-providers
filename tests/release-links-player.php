@@ -27,6 +27,11 @@ function absint( $value )
     return abs( (int) $value );
 }
 
+function wp_parse_url( $url, $component = -1 )
+{
+    return parse_url( $url, $component );
+}
+
 function shortcode_atts( $defaults, $atts, $shortcode = '' )
 {
     return array_merge( $defaults, array_intersect_key( (array) $atts, $defaults ) );
@@ -50,6 +55,11 @@ function esc_html( $value )
 function esc_html__( $value, $domain )
 {
     return esc_html( $value );
+}
+
+function __( $value, $domain = '' )
+{
+    return $value;
 }
 
 function locate_template( $template_name )
@@ -106,18 +116,40 @@ foreach ( array( 'mds-bandcamp-player-wrapper', 'album=2334859609', 'size=small'
     check_player( false !== strpos( $player, $fragment ), 'Player output is missing: ' . $fragment );
 }
 
-// The release-page player setting disables the output when unchecked.
-$GLOBALS['settings_option'] = array( 'transient' => 60, 'release_player' => false );
+// The release subdomain derives from the stored Bandcamp URL.
+$GLOBALS['album_meta'] = array( 'album_id' => 2334859609, 'url' => 'https://brianwalton.bandcamp.com/album/what-the-gold' );
 check_player(
-    '' === MDS_Bandcamp_Frontend::filter_release_links_audio( '', 92 ),
-    'The disabled setting must suppress the player.'
+    'brianwalton' === MDS_Bandcamp_Helpers::get_release_subdomain( 92 ),
+    'The release subdomain must derive from the stored Bandcamp URL.'
+);
+$GLOBALS['album_meta'] = array( 'album_id' => 2334859609 );
+check_player(
+    '' === MDS_Bandcamp_Helpers::get_release_subdomain( 92 ),
+    'A release without a stored URL must have no subdomain.'
 );
 
-// Saved settings predating the toggle keep the player enabled.
-$GLOBALS['settings_option'] = array( 'transient' => 60 );
+// Audio Player Manager registration and declarative settings rendering.
+$registered = MDS_Bandcamp_Frontend::register_audio_player( array() );
 check_player(
-    false !== strpos( MDS_Bandcamp_Frontend::filter_release_links_audio( '', 92 ), 'album=2334859609' ),
-    'The player must default to enabled for existing settings.'
+    isset( $registered['bandcamp'] )
+    && is_callable( $registered['bandcamp']['render_callback'] )
+    && isset( $registered['bandcamp']['fields']['size'], $registered['bandcamp']['fields']['bgcol'], $registered['bandcamp']['fields']['linkcol'] ),
+    'Bandcamp must register its player definition and declarative fields with the Audio Player Manager.'
 );
+
+$custom_rendered = MDS_Bandcamp_Frontend::render_audio_player(
+    92,
+    array(
+        'size'      => 'large',
+        'height'    => 240,
+        'bgcol'     => '#112233',
+        'linkcol'   => '#AABBCC',
+        'artwork'   => 'small',
+        'tracklist' => true,
+    )
+);
+foreach ( array( 'album=2334859609', 'size=large', 'bgcol=112233', 'linkcol=aabbcc', 'artwork=small', 'tracklist=true', 'height: 240px' ) as $fragment ) {
+    check_player( false !== strpos( $custom_rendered, $fragment ), 'Custom Audio Player Manager settings missing: ' . $fragment );
+}
 
 echo "Release Links player filter tests passed.\n";

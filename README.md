@@ -22,15 +22,41 @@ admin settings, REST metadata support, and MDS Release Manager integration.
 
 Legacy `blocks-for-bandcamp/*` content is migrated and remains renderable.
 
+The Album, Miniplayer, and Merch blocks select their release through a
+searchable picker that lists published releases with a verified Bandcamp album
+(preloaded in memory via `window.mdsRmCatalog` when MDS Release Manager is
+active, or served by the editor-only `GET /mds-bandcamp/v1/releases` endpoint,
+requiring `edit_posts`). Matching delegates to the Release Manager search
+service, so terms match the release title or its artist's name, and options
+display as "Title — Artist". Picking a release copies its album ID and URL into
+the block, and a read-only snapshot field is shown when `WP_DEBUG` is enabled.
+
+The Discography block (`mds-bandcamp/bandcamp-discography`) uses a searchable
+Artist picker (`window.mdsBandcampUseArtistPicker`) that lists published
+Artists with a configured **Bandcamp Artist URL** (set in the **Bandcamp
+Integration** meta box on the Artist edit screen and preloaded via the
+`mds_rm_artist_picker_item` filter). Leaving the Artist selection blank
+automatically resolves the current context (the current Artist page, or the
+linked Artist of the current Release). Appearance controls live in the editor's
+Styles tab.
+
 ## Release Manager integration
 
 With MDS Release Manager active, the release editor's Bandcamp meta box saves a
-verified album URL and ID as `mds_bandcamp_integration` post meta. On the
-frontend, the plugin supplies the small album player to the Release Links block
-through the `mds_rm_release_links_audio_html` filter, rendered via the
-theme-overridable `frontend-widget.php` template. The Release Pages Player
-setting (default enabled) on the plugin settings page or the Bandcamp
-Integration tab under Releases → Settings turns this player off.
+verified album URL and ID as `mds_bandcamp_integration` post meta (along with
+registered `bandcamp_album_id` and `bandcamp_album_url` release meta keys). The
+plugin registers **Bandcamp Album Player** in the **Audio Player Manager** tab
+under Releases → Settings (`mds_rm_register_audio_players`), exposing site-wide
+player size, height, background color, link/accent color, artwork, tracklist,
+and minimal-square controls. When Bandcamp is selected as the active player, it
+renders through the theme-overridable `frontend-widget.php` template for
+releases with a verified Bandcamp album and automatically falls back to the
+core HTML5 Player (`.mp3`) on releases without a Bandcamp album.
+
+ In the block editor, the plugin enriches the preloaded Release Manager catalog
+(`mds_rm_release_picker_item`) with each release's Bandcamp `album_id`, `url`,
+and `subdomain` so the Album, Miniplayer, Merch, and Discography block pickers
+filter and search in memory without extra REST calls.
 
 ## Class Layout
 
@@ -108,6 +134,7 @@ php tests/block-metadata.php
 php tests/block-migration.php
 php tests/templates.php
 php tests/release-links-player.php
+php tests/releases-endpoint.php
 ```
 
 Run PHP syntax checks across the plugin:

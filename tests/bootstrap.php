@@ -56,6 +56,7 @@ $expected = array(
     array( 'action', 'admin_init', array( 'MDS_Bandcamp_Admin_Interface', 'register_settings' ), 10, 1 ),
     array( 'action', 'admin_menu', array( 'MDS_Bandcamp_Admin_Interface', 'add_settings_menu' ), 10, 1 ),
     array( 'filter', 'mds_rm_site_settings_tabs', array( 'MDS_Bandcamp_Admin_Interface', 'register_release_manager_tab' ), 10, 1 ),
+    array( 'filter', 'mds_rm_register_audio_players', array( 'MDS_Bandcamp_Frontend', 'register_audio_player' ), 10, 1 ),
     array( 'filter', 'mds_rm_release_links_audio_html', array( 'MDS_Bandcamp_Frontend', 'filter_release_links_audio' ), 10, 3 ),
     array( 'action', 'admin_enqueue_scripts', array( 'MDS_Bandcamp_Assets', 'enqueue_admin_styles' ), 10, 1 ),
     array( 'action', 'enqueue_block_editor_assets', array( 'MDS_Bandcamp_Assets', 'enqueue_block_styles' ), 10, 1 ),
@@ -70,7 +71,9 @@ $expected = array(
     array( 'action', 'init', array( 'MDS_Bandcamp_Blocks', 'load_blocks' ), 10, 1 ),
     array( 'filter', 'block_categories_all', array( 'MDS_Bandcamp_Blocks', 'custom_block_category' ), 10, 1 ),
     array( 'filter', 'plugin_action_links_' . MDS_BANDCAMP_PLUGIN_BASENAME, array( 'MDS_Bandcamp_Blocks', 'plugin_links' ), 10, 1 ),
-    array( 'action', 'rest_api_init', array( 'MDS_Bandcamp_REST_API', 'register_meta_route' ), 10, 1 ),
+    array( 'action', 'rest_api_init', array( 'MDS_Bandcamp_REST_API', 'register_routes' ), 10, 1 ),
+    array( 'filter', 'mds_rm_release_picker_item', array( 'MDS_Bandcamp_REST_API', 'enrich_release_picker_item' ), 10, 2 ),
+    array( 'filter', 'mds_rm_artist_picker_item', array( 'MDS_Bandcamp_REST_API', 'enrich_artist_picker_item' ), 10, 2 ),
     array( 'shortcode', 'bandcamp', array( 'MDS_Bandcamp_Utilities', 'register_bandcamp_shortcode' ), 10, 1 ),
     array( 'filter', 'wp_kses_allowed_html', array( 'MDS_Bandcamp_Utilities', 'kses_additions' ), 10, 2 ),
 );

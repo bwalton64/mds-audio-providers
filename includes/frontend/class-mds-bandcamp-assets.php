@@ -40,7 +40,7 @@ final class MDS_Bandcamp_Assets {
 		}
 
 		$screen = get_current_screen();
-		if ( ! $screen || 'release' !== $screen->post_type ) {
+		if ( ! $screen || ! in_array( $screen->post_type, array( 'release', 'artist' ), true ) ) {
 			return;
 		}
 
@@ -48,12 +48,24 @@ final class MDS_Bandcamp_Assets {
 	}
 
 	/**
-	 * Enqueue shared styles in the block editor.
+	 * Enqueue shared styles and the release picker in the block editor.
 	 *
 	 * @return void
 	 */
 	public static function enqueue_block_styles(): void {
 		wp_enqueue_style( 'mds-bandcamp-blocks', MDS_BANDCAMP_PLUGIN_URL . '/css/blocks.css', array(), MDS_BANDCAMP_PLUGIN_VERSION );
+		$deps = array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-url', 'wp-i18n', 'wp-html-entities' );
+		if ( function_exists( 'wp_script_is' ) && wp_script_is( 'mds-rm-release-picker', 'registered' ) ) {
+			$deps[] = 'mds-rm-release-picker';
+		}
+		wp_enqueue_script(
+			'mds-bandcamp-release-picker',
+			MDS_BANDCAMP_URL . 'js/release-picker.js',
+			$deps,
+			filemtime( MDS_BANDCAMP_PATH . 'js/release-picker.js' ),
+			true
+		);
+		wp_add_inline_script( 'mds-bandcamp-release-picker', 'window.mdsBandcampDebug = ' . wp_json_encode( defined( 'WP_DEBUG' ) && WP_DEBUG ) . ';', 'before' );
 	}
 
 	/**

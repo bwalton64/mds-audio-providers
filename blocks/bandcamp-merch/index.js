@@ -43,89 +43,33 @@ registerBlockType('mds-bandcamp/bandcamp-merch', {
         var attributes = props.attributes;
         var setAttributes = props.setAttributes;
 
-		// lightweight local UI state
-		var _useState_loading = useState(false), loading = _useState_loading[0], setLoading = _useState_loading[1];
-		var _useState_error   = useState(''),    error   = _useState_error[0],   setError   = _useState_error[1];
-		var _useState_readonly = useState(false), isReadonly = _useState_readonly[0], setReadonly = _useState_readonly[1];
-
 		useEffect(() => {
 			if (!attributes.blockID) {
 				setAttributes({ blockID: 'wp-block-' + Math.random().toString(36).slice(2, 12) });
 			}
 		}, []);
-		
-		useEffect(function () {
-			setReadonly(!!attributes.albumID);
-		}, [attributes.albumID]);
 
-		// Call your REST route to read a <meta> tag from the Bandcamp page
-		function fetchAlbumId() {
-			var url  = attributes.url || '';
+		var editorStore = wp.data.select('core/editor');
+		var currentPostId = editorStore && editorStore.getCurrentPostId ? (editorStore.getCurrentPostId() || 0) : 0;
 
-			if ( ! url ) { return; }
-
-			setLoading(true); setError('');
-
-			apiFetch({
-				path: '/mds-bandcamp/v1/meta',
-				method: 'POST',
-				data: { url: url, name: 'bc-page-properties' }
-			}).then(function(res){
-				// expects { ok:true, value: '123456' }
-				var value = res && res.value ? String(res.value) : '';
-				setAttributes({ albumID: value });
-				setReadonly(true);
-				setLoading(false);
-			}).catch(function(e){
-				//setAttributes({ albumID: '' });
-				setReadonly(false);
-				setError(e && e.message ? e.message : 'Failed to fetch album ID.');
-				setLoading(false);
-			});
-		}
-
+		var releasePicker = window.mdsBandcampUseReleasePicker({
+			value: attributes.albumID,
+			label: 'Release',
+			help: 'Search published releases with a verified Bandcamp album by title or artist.',
+			enabled: props.isSelected,
+			debugLabel: 'Bandcamp Album ID',
+			mapValue: function (item) { return item.album_id; },
+			onSelect: function (item) {
+				setAttributes({
+					albumID: item && item.album_id ? String(item.album_id) : '',
+					url: item && item.url ? item.url : ''
+				});
+			}
+		});
 
 		var InspectorPanel = createElement(InspectorControls, null,
 			createElement(PanelBody, null,
-				createElement(TextareaControl, {
-					label: "Album URL",
-					value: attributes.url,
-					readOnly: isReadonly,
-					onChange: function (value) {
-						return setAttributes({ url: value });
-					},
-					style: {wordBreak:'break-all'},
-					rows:3
-				}),
-				createElement('small',{},
-					'Enter album URL, then click "Fetch Album ID" to sync the album ID',
-					createElement('br'),
-					createElement('br')
-				),					
-				!attributes.albumID && createElement(Button, {
-					variant: 'secondary',
-					onClick: fetchAlbumId,
-					style: {margin:"0 0 10px 0"},
-				}, 'Fetch Album ID'),
-				loading ? createElement(Spinner, null) : null,
-				error ? createElement(Notice, { status: 'error', isDismissible: false }, error) : null,
-				attributes.albumID && createElement('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'center',margin:'0 0 10px 0'}}, 
-					createElement(Button,{style:{background:'green',color:'white',boxShadow:'none'},disabled:true},'✔ SYNCED'),
-					createElement(Button, {
-						variant: 'secondary',
-						onClick: function() { setAttributes({albumID: ''}); },
-						style: {margin:"0",color:"red",borderColor:"red",boxShadow:"inset 0 0 0 1px red"},
-					}, 'Clear'),	
-				),	
-				createElement(TextControl, {
-					label: "Album ID",
-					value: attributes.albumID,
-					readOnly: true,
-					onChange: function (value) {
-						return setAttributes({ albumID: value });
-					},
-					style: {opacity:'0.5'}
-				}),
+				releasePicker,
 				createElement(SelectControl, {
 					label: 'Single Album or All Products?',
 					value: attributes.single_or_all,
@@ -138,18 +82,6 @@ registerBlockType('mds-bandcamp/bandcamp-merch', {
 					options: [ { label: 'Cards', value: 'cards' }, { label: 'List', value: 'list' } ],
 					onChange: function(val) { setAttributes({ layout_style: val }); }
 				}),	
-				attributes.layout_style == 'cards' && createElement('label', {className:'bandcamp-label'},'Layout Columns'),
-				attributes.layout_style == 'cards' && createElement(ButtonGroup, {style:{marginBottom:'16px'}},
-					[1, 2, 3, 4, 5, 6].map( function( val ) {
-						return createElement(Button,{
-							isPressed: attributes.layout_columns === val,
-							onClick: function() {
-								setAttributes({ layout_columns: val });
-							},
-							key: val
-						},val);
-					})
-				),					
 				createElement('label', {className:'bandcamp-label'},'Photo Version'),
 				createElement(ButtonGroup, {style:{marginBottom:'16px'}},
 					photoVersion.map( function( option ) {
@@ -218,7 +150,27 @@ registerBlockType('mds-bandcamp/bandcamp-merch', {
 					label: 'Display Purchase Button?', 
 					checked: attributes.display_purchase_button, 
 					onChange: function(value) { setAttributes({ display_purchase_button: value }); } 
-				}),
+				})
+			)
+		);
+
+		var StylesPanel = createElement(InspectorControls, { group: 'styles' },
+			createElement(PanelBody, { title: 'Layout', initialOpen: true },
+				attributes.layout_style == 'cards' && createElement('label', {className:'bandcamp-label'},'Layout Columns'),
+				attributes.layout_style == 'cards' && createElement(ButtonGroup, {style:{marginBottom:'16px'}},
+					[1, 2, 3, 4, 5, 6].map( function( val ) {
+						return createElement(Button,{
+							isPressed: attributes.layout_columns === val,
+							onClick: function() {
+								setAttributes({ layout_columns: val });
+							},
+							key: val
+						},val);
+					})
+				),
+				attributes.layout_style != 'cards' && createElement('p', null, 'Column controls apply to the Cards layout.')
+			),
+			createElement(PanelBody, { title: 'Purchase Button', initialOpen: true },
 				attributes.display_purchase_button && createElement('h3', null, "Purchase Button : BG Color"),
 				attributes.display_purchase_button && createElement(ColorPalette, {
 					label: "Purchase Button : BG Color",
@@ -232,18 +184,20 @@ registerBlockType('mds-bandcamp/bandcamp-merch', {
 					value: attributes.style_purchase_button_textcolor,
 					onChange: function(value) { setAttributes({ style_purchase_button_textcolor: value }); },
 					disableAlpha: true
-				}),				
-			
+				}),
+				!attributes.display_purchase_button && createElement('p', null, 'Enable the purchase button to style it.')
 			)
 		);
 
 		return createElement(Fragment,null,
+			StylesPanel,
 			InspectorPanel,
 			createElement('div', useBlockProps(),
 				createElement(ServerSideRender, {
 					block: "mds-bandcamp/bandcamp-merch",
 					httpMethod: "POST",
-					attributes: attributes
+					attributes: attributes,
+					urlQueryArgs: { post_id: currentPostId }
 				})
 			)
 		);

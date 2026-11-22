@@ -42,27 +42,57 @@ registerBlockType('mds-bandcamp/bandcamp-discography', {
 			}
 		}, []);
 
+		var editorStore = wp.data.select('core/editor');
+		var currentPostId = editorStore && editorStore.getCurrentPostId ? (editorStore.getCurrentPostId() || 0) : 0;
+
+		var artistPicker = window.mdsBandcampUseArtistPicker({
+			artistId: attributes.artistId,
+			value: attributes.artist_url,
+			label: 'Artist',
+			help: 'Search published artists with a configured Bandcamp Artist URL. Leave blank to use the current context.',
+			enabled: props.isSelected,
+			debugLabel: 'Bandcamp Artist URL',
+			onSelect: function (artist) {
+				setAttributes({
+					artistId: artist && artist.id ? Number(artist.id) : 0,
+					artist_url: artist && (artist.artist_url || artist.subdomain) ? String(artist.artist_url || artist.subdomain) : ''
+				});
+			}
+		});
+
 		var InspectorPanel = createElement(InspectorControls, null,
 			createElement(PanelBody, null,
-				createElement(TextControl, {
-					label: "Artist subdomain / URL",
-					value: attributes.artist_url,
-					onChange: function (value) {
-						return setAttributes({ artist_url: value });
-					},
-				}),
-				createElement('small',{},
-					'Enter account name from Bandcamp URL, not including any other part. Example:',
-					createElement('br'),
-					createElement('span',{style:{color:'#888888',textDecoration:'line-through'}},'https://'),
-					createElement('span',{style:{color:'#000000',fontWeight:'bold'}},'artistname'),
-					createElement('span',{style:{color:'#888888',textDecoration:'line-through'}},'.bandcamp.com'),
-
-				),
+				artistPicker,
 
 				createElement('hr', null),
-				createElement('label',{style:{display:'block',marginBottom:'10px'}},'Layout Options'),
+				createElement('label',{style:{display:'block',marginBottom:'10px'}},'Display Options'),
 
+
+				createElement(ToggleControl, {
+					label: 'Display Album Title?',
+					checked: attributes.display_album_title,
+					onChange: function(val) { setAttributes({ display_album_title: val }); }
+				}),
+				createElement(ToggleControl, {
+					label: 'Display Album Link?',
+					checked: attributes.display_album_link,
+					onChange: function(val) { setAttributes({ display_album_link: val }); }
+				}),
+				createElement(ToggleControl, {
+					label: 'Display Artist?',
+					checked: attributes.display_album_artist,
+					onChange: function(val) { setAttributes({ display_album_artist: val }); }
+				}),
+				createElement(ToggleControl, {
+					label: 'Display Album Art?',
+					checked: attributes.display_album_art,
+					onChange: function(val) { setAttributes({ display_album_art: val }); }
+				})
+			)
+		);
+
+		var StylesPanel = createElement(InspectorControls, { group: 'styles' },
+			createElement(PanelBody, { title: 'Layout', initialOpen: true },
 				createElement('label', {className:'bandcamp-label'},'Layout Columns (Desktop)'),
 				createElement(ButtonGroup, {style:{marginBottom:'16px'}},
 					[1, 2, 3, 4, 5, 6].map( function( val ) {
@@ -111,39 +141,9 @@ registerBlockType('mds-bandcamp/bandcamp-discography', {
 					},
 					enable: ['width', 'style', 'color', 'radius'],
 					colors: wp.data.select('core/block-editor').getSettings().colors
-				}),
-
-
-				createElement('hr', null),
-				createElement('label',{style:{display:'block',marginBottom:'10px'}},'Display Options'),
-
-
-				createElement(ToggleControl, {
-					label: 'Display Album Title?',
-					checked: attributes.display_album_title,
-					onChange: function(val) { setAttributes({ display_album_title: val }); }
-				}),
-				createElement(ToggleControl, {
-					label: 'Display Album Link?',
-					checked: attributes.display_album_link,
-					onChange: function(val) { setAttributes({ display_album_link: val }); }
-				}),
-				createElement(ToggleControl, {
-					label: 'Display Artist?',
-					checked: attributes.display_album_artist,
-					onChange: function(val) { setAttributes({ display_album_artist: val }); }
-				}),
-				createElement(ToggleControl, {
-					label: 'Display Album Art?',
-					checked: attributes.display_album_art,
-					onChange: function(val) { setAttributes({ display_album_art: val }); }
-				}),
-
-
-				createElement('hr', null),
-				createElement('label',{style:{display:'block',marginBottom:'10px'}},'Title Options'),
-
-
+				})
+			),
+			createElement(PanelBody, { title: 'Titles & Images', initialOpen: true },
 				createElement(SelectControl, {
 					type: "string",
 					label: "Title Alignment",
@@ -171,13 +171,9 @@ registerBlockType('mds-bandcamp/bandcamp-discography', {
 					onChange: function(value) {
 						return setAttributes({ release_image_padding: value });
 					}
-				}),		
-
-
-				createElement('hr', null),
-				createElement('label',{style:{display:'block',marginBottom:'10px'}},'Color Options'),
-
-
+				})
+			),
+			createElement(PanelBody, { title: 'Colors', initialOpen: true },
 				createElement( 'label', { className: 'bandcamp-label' }, 'Text Color' ),
 				createElement(ColorPalette, {
 					value: attributes.text_color,
@@ -207,11 +203,13 @@ registerBlockType('mds-bandcamp/bandcamp-discography', {
 
 		return createElement(Fragment, null,
 			InspectorPanel,
+			StylesPanel,
 			createElement('div', useBlockProps(),
 				createElement(ServerSideRender, {
 					block: "mds-bandcamp/bandcamp-discography",
 					httpMethod: "POST",
-					attributes: attributes
+					attributes: attributes,
+					urlQueryArgs: { post_id: currentPostId }
 				})
 			)
 		);

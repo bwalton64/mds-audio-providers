@@ -19,6 +19,7 @@
 	},
     "attributes": {
 		"previewMode": { "type": "boolean", "default": true },
+		"artistId": { "type": "number", "default": 0 },
 		"artist_url": { "type": "string", "default": "" },
 		"blockID": { "type": "string", "default": "" },
 		"text_color": { "type": "string", "default": "#000000" },

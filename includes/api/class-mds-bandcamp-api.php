@@ -319,7 +319,8 @@ final class MDS_Bandcamp_API
      */
     private static function get_discography_data( $artist_url ): array
     {
-        if ( empty( $artist_url ) ) {
+        $subdomain = MDS_Bandcamp_Helpers::normalize_artist_subdomain( (string) $artist_url );
+        if ( '' === $subdomain ) {
             return array( 'error' => true, 'message' => 'Artist URL Required' );
         }
 
@@ -331,7 +332,7 @@ final class MDS_Bandcamp_API
         );
 
         // Set the URL to fetch.
-        $url = 'https://' . $artist_url . '.bandcamp.com/music';
+        $url = 'https://' . $subdomain . '.bandcamp.com/music';
 
         // Fetch the page HTML.
         $html = self::fetch_bandcamp_page( $url );

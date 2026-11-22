@@ -43,7 +43,7 @@ final class MDS_Bandcamp_Admin
             return;
         }
 
-        if ( ! $post || 'release' !== $post->post_type ) {
+        if ( ! $post || ! in_array( $post->post_type, array( 'release', 'artist' ), true ) ) {
             return;
         }
 
@@ -51,14 +51,14 @@ final class MDS_Bandcamp_Admin
             'mds_bandcamp_settings',
             __( 'Bandcamp Integration', 'mds-bandcamp-integration' ),
             array( self::class, 'render_meta_box' ),
-            'release',
+            $post->post_type,
             'normal',
             'default'
         );
     }
 
     /**
-     * Render the Bandcamp meta box.
+     * Render the Bandcamp meta box for a Release or Artist post.
      *
      * @since 1.0.0
      * @param WP_Post $post Post being processed.
@@ -67,9 +67,11 @@ final class MDS_Bandcamp_Admin
     public static function render_meta_box( $post ): void
     {
         $is_bandcamp_active = MDS_Bandcamp_Dependencies::is_bandcamp_active();
-        $bandcamp_data      = self::get_bandcamp_data( $post->ID );
-        $url                = $bandcamp_data['url'] ?? '';
-        $album_id           = $bandcamp_data['album_id'] ?? '';
+        $is_artist          = isset( $post->post_type ) && 'artist' === $post->post_type;
+        $bandcamp_data      = $is_artist ? array() : self::get_bandcamp_data( $post->ID );
+        $url                = $is_artist ? MDS_Bandcamp_Helpers::get_artist_url( $post->ID ) : ( $bandcamp_data['url'] ?? '' );
+        $album_id           = $is_artist ? '' : ( $bandcamp_data['album_id'] ?? '' );
+        $artist_subdomain   = $is_artist ? MDS_Bandcamp_Helpers::get_artist_subdomain( $post->ID ) : '';
 
         // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- The template escapes dynamic values and emits the nonce field.
         echo MDS_Bandcamp_Templates::render(
@@ -78,6 +80,8 @@ final class MDS_Bandcamp_Admin
                 'nonce_field'        => wp_nonce_field( 'mds_bandcamp_save', 'mds_bandcamp_nonce', false, false ),
                 'url'                => $url,
                 'album_id'           => $album_id,
+                'is_artist_metabox'  => $is_artist,
+                'artist_subdomain'   => $artist_subdomain,
                 'is_bandcamp_active' => $is_bandcamp_active,
             )
         );
@@ -97,6 +101,34 @@ final class MDS_Bandcamp_Admin
             return;
         }
 
+        $post_type = function_exists( 'get_post_type' ) ? get_post_type( $post_id ) : 'release';
+        if ( 'artist' === $post_type || isset( $post_data['mds_bandcamp_artist_url'] ) ) {
+            $raw_artist_url = isset( $post_data['mds_bandcamp_artist_url'] ) && is_string( $post_data['mds_bandcamp_artist_url'] )
+                ? trim( sanitize_text_field( wp_unslash( $post_data['mds_bandcamp_artist_url'] ) ) )
+                : '';
+            $subdomain      = MDS_Bandcamp_Helpers::normalize_artist_subdomain( $raw_artist_url );
+
+            if ( '' !== $subdomain ) {
+                $canonical_url = 'https://' . $subdomain . '.bandcamp.com';
+                update_post_meta(
+                    $post_id,
+                    'mds_bandcamp_artist_integration',
+                    array(
+                        'url'       => $canonical_url,
+                        'subdomain' => $subdomain,
+                        'saved_at'  => current_time( 'timestamp' ),
+                    )
+                );
+                update_post_meta( $post_id, 'bandcamp_artist_url', $canonical_url );
+                update_post_meta( $post_id, 'bandcamp_artist_subdomain', $subdomain );
+            } else {
+                delete_post_meta( $post_id, 'mds_bandcamp_artist_integration' );
+                delete_post_meta( $post_id, 'bandcamp_artist_url' );
+                delete_post_meta( $post_id, 'bandcamp_artist_subdomain' );
+            }
+            return;
+        }
+
         // Store the album ID if provided
         if ( isset( $post_data['mds_bandcamp_album_id'] ) ) {
             $album_id = sanitize_text_field( wp_unslash( $post_data['mds_bandcamp_album_id'] ) );
@@ -112,12 +144,18 @@ final class MDS_Bandcamp_Admin
                 );
 
                 update_post_meta( $post_id, 'mds_bandcamp_integration', $bandcamp_data );
+                update_post_meta( $post_id, 'bandcamp_album_id', (string) $album_id );
+                update_post_meta( $post_id, 'bandcamp_album_url', $url );
             } else {
                 delete_post_meta( $post_id, 'mds_bandcamp_integration' );
+                delete_post_meta( $post_id, 'bandcamp_album_id' );
+                delete_post_meta( $post_id, 'bandcamp_album_url' );
             }
         } elseif ( isset( $post_data['mds_bandcamp_url'] ) && empty( $post_data['mds_bandcamp_album_id'] ) ) {
             // Clear album ID if URL is set but album_id is empty (user cleared it)
             delete_post_meta( $post_id, 'mds_bandcamp_integration' );
+            delete_post_meta( $post_id, 'bandcamp_album_id' );
+            delete_post_meta( $post_id, 'bandcamp_album_url' );
         }
     }
 
@@ -166,7 +204,7 @@ final class MDS_Bandcamp_Admin
     {
         global $post;
 
-        if ( ! in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) || ! $post || 'release' !== $post->post_type ) {
+        if ( ! in_array( $hook_suffix, array( 'post.php', 'post-new.php' ), true ) || ! $post || ! in_array( $post->post_type, array( 'release', 'artist' ), true ) ) {
             return;
         }
 
@@ -189,7 +227,7 @@ final class MDS_Bandcamp_Admin
     }
 
     /**
-     * AJAX handler for verifying Bandcamp URL and extracting album ID.
+     * AJAX handler for verifying a Bandcamp Release URL (extracting Album ID) or Artist URL.
      *
      * @since 1.0.0
      * @return void
@@ -206,7 +244,28 @@ final class MDS_Bandcamp_Admin
             wp_send_json_error( array( 'message' => __( 'No URL provided.', 'mds-bandcamp-integration' ) ) );
         }
 
-        $url = esc_url_raw( wp_unslash( $_POST['url'] ) );
+        $raw_input = sanitize_text_field( wp_unslash( $_POST['url'] ) );
+        $mode      = isset( $_POST['mode'] ) ? sanitize_key( wp_unslash( $_POST['mode'] ) ) : 'release';
+
+        if ( 'artist' === $mode ) {
+            $subdomain = MDS_Bandcamp_Helpers::normalize_artist_subdomain( $raw_input );
+            if ( '' === $subdomain ) {
+                wp_send_json_error( array( 'message' => __( 'Enter a valid Bandcamp Artist URL (for example https://artist.bandcamp.com).', 'mds-bandcamp-integration' ) ) );
+            }
+            $canonical_url = 'https://' . $subdomain . '.bandcamp.com';
+            $response      = MDS_Bandcamp_API::fetch_bandcamp_page( $canonical_url . '/music' );
+            if ( is_array( $response ) && isset( $response['error'] ) ) {
+                wp_send_json_error( array( 'message' => $response['message'] ?? __( 'Failed to verify Bandcamp Artist page.', 'mds-bandcamp-integration' ) ) );
+            }
+            wp_send_json_success(
+                array(
+                    'artist_url' => $canonical_url,
+                    'subdomain'  => $subdomain,
+                )
+            );
+        }
+
+        $url = esc_url_raw( $raw_input );
 
         // Validate URL format
         if ( empty( $url ) ) {
