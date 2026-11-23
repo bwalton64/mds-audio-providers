@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Added
+- Added a **Use Bandcamp URL** button to the MDS Release Manager Commerce meta box (`mds_rm_after_buy_now_field`) that inserts the release's verified Bandcamp URL into the Multi-Format Buy Now repeater with the **Digital Download** (`digital-download`) media format and **Bandcamp** store label.
+- Added `Admin::ensure_digital_download_media_format()` on `init` (priority 20) to ensure the `digital-download` `release_media_format` term and its `fas fa-download` icon exist on the Hub site.
+
 ## [1.0.1] - 2026-11-22
 
 ### Added

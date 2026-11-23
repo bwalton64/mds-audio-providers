@@ -38,8 +38,70 @@ final class Admin {
 	public static function register_hooks(): void {
 		add_action( 'mds_rm_register_custom_meta_boxes', array( self::class, 'register_meta_box' ) );
 		add_action( 'mds_rm_save_custom_meta', array( self::class, 'save_meta' ), 10, 2 );
+		add_action( 'mds_rm_after_buy_now_field', array( self::class, 'render_buy_now_button' ) );
+		add_action( 'init', array( self::class, 'ensure_digital_download_media_format' ), 20 );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue_metabox_assets' ) );
 		add_action( 'wp_ajax_mds_bc_verify_url', array( self::class, 'ajax_verify_url' ) );
+	}
+
+	/**
+	 * Ensure the "Digital Download" release_media_format term exists on the Hub with its icon.
+	 *
+	 * Used when inserting a Bandcamp row into the Release Manager Multi-Format Buy Now repeater.
+	 *
+	 * @since 1.0.2
+	 *
+	 * @return void
+	 */
+	public static function ensure_digital_download_media_format(): void {
+		if ( ! is_admin() || ! taxonomy_exists( 'release_media_format' ) ) {
+			return;
+		}
+
+		if ( class_exists( '\MDS_RM_Sync' ) && method_exists( '\MDS_RM_Sync', 'is_hub' ) && ! \MDS_RM_Sync::is_hub() ) {
+			return;
+		}
+
+		$icon_meta_key = class_exists( '\MDS_RM_Release_Model' ) && defined( '\MDS_RM_Release_Model::MEDIA_FORMAT_ICON_META_KEY' )
+			? \MDS_RM_Release_Model::MEDIA_FORMAT_ICON_META_KEY
+			: '_mds_media_format_icon';
+
+		$existing = get_term_by( 'slug', 'digital-download', 'release_media_format' );
+		if ( $existing && ! is_wp_error( $existing ) ) {
+			if ( '' === (string) get_term_meta( (int) $existing->term_id, $icon_meta_key, true ) ) {
+				update_term_meta( (int) $existing->term_id, $icon_meta_key, 'fas fa-download' );
+			}
+			return;
+		}
+
+		$inserted = wp_insert_term(
+			__( 'Digital Download', 'mds-bandcamp-integration' ),
+			'release_media_format',
+			array(
+				'slug' => 'digital-download',
+			)
+		);
+
+		if ( ! is_wp_error( $inserted ) && ! empty( $inserted['term_id'] ) ) {
+			update_term_meta( (int) $inserted['term_id'], $icon_meta_key, 'fas fa-download' );
+		}
+	}
+
+	/**
+	 * Output the "Use Bandcamp URL" helper button next to the Release Manager Buy Now repeater controls.
+	 *
+	 * @since 1.0.2
+	 *
+	 * @return void
+	 */
+	public static function render_buy_now_button(): void {
+		if ( ! Dependencies::is_mds_active() ) {
+			return;
+		}
+
+		echo '<button type="button" class="button button-secondary" id="mds_use_bandcamp_url_btn" disabled>'
+			. esc_html__( 'Use Bandcamp URL', 'mds-bandcamp-integration' )
+			. '</button>';
 	}
 
 	/**
@@ -227,14 +289,20 @@ final class Admin {
 		wp_enqueue_script(
 			'mds-bc-metabox',
 			MDS_BC_URL . 'js/metabox-verify.js',
-			array( 'jquery' ),
+			array( 'jquery', 'wp-a11y' ),
 			MDS_BC_VERSION,
 			true
 		);
 
 		$metabox_data = array(
-			'ajaxUrl' => admin_url( 'admin-ajax.php' ),
-			'nonce'   => wp_create_nonce( 'mds_bc_verify_nonce' ),
+			'ajaxUrl'  => admin_url( 'admin-ajax.php' ),
+			'nonce'    => wp_create_nonce( 'mds_bc_verify_nonce' ),
+			'messages' => array(
+				'storeName'            => __( 'Bandcamp', 'mds-bandcamp-integration' ),
+				'digitalDownloadLabel' => __( 'Digital Download', 'mds-bandcamp-integration' ),
+				'buyNowAdded'          => __( 'Added Bandcamp URL to Buy Now formats.', 'mds-bandcamp-integration' ),
+				'buyNowExists'         => __( 'This Bandcamp URL is already listed in Buy Now.', 'mds-bandcamp-integration' ),
+			),
 		);
 
 		wp_add_inline_script(

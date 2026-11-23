@@ -44,6 +44,8 @@ require __DIR__ . '/../mds-bandcamp-integration.php';
 $expected = array(
 	array( 'action', 'mds_rm_register_custom_meta_boxes', array( MDS\Bandcamp\Admin\Admin::class, 'register_meta_box' ), 10, 1 ),
 	array( 'action', 'mds_rm_save_custom_meta', array( MDS\Bandcamp\Admin\Admin::class, 'save_meta' ), 10, 2 ),
+	array( 'action', 'mds_rm_after_buy_now_field', array( MDS\Bandcamp\Admin\Admin::class, 'render_buy_now_button' ), 10, 1 ),
+	array( 'action', 'init', array( MDS\Bandcamp\Admin\Admin::class, 'ensure_digital_download_media_format' ), 20, 1 ),
 	array( 'action', 'admin_enqueue_scripts', array( MDS\Bandcamp\Admin\Admin::class, 'enqueue_metabox_assets' ), 10, 1 ),
 	array( 'action', 'wp_ajax_mds_bc_verify_url', array( MDS\Bandcamp\Admin\Admin::class, 'ajax_verify_url' ), 10, 1 ),
 	array( 'action', 'admin_init', array( MDS\Bandcamp\Admin\AdminInterface::class, 'register_settings' ), 10, 1 ),

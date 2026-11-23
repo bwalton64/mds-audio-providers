@@ -85,6 +85,8 @@ mds-bandcamp-integration/
 | `mds_rm_site_settings_tabs` | Filter | `MDS\Bandcamp\Admin\AdminInterface::register_release_manager_tab` | Registers the **Bandcamp Integration** tab under Releases → Settings. |
 | `mds_rm_register_custom_meta_boxes` | Action | `MDS\Bandcamp\Admin\Admin::register_meta_box` | Registers the **Bandcamp Integration** meta box (`mds_bc_settings`) on `release` and `artist` post types. |
 | `mds_rm_save_custom_meta` | Action | `MDS\Bandcamp\Admin\Admin::save_meta` | Persists Release (`album_id`, `url`) and Artist (`artist_url`, `subdomain`) Bandcamp metadata. |
+| `mds_rm_after_buy_now_field` | Action | `MDS\Bandcamp\Admin\Admin::render_buy_now_button` | Outputs the **Use Bandcamp URL** button in the Release Commerce meta box to populate a `Digital Download` / `Bandcamp` Buy Now row. |
+| `init` (priority `20`) | Action | `MDS\Bandcamp\Admin\Admin::ensure_digital_download_media_format` | Ensures the `digital-download` `release_media_format` term and `fas fa-download` icon exist on the Hub site. |
 | `mds_rm_register_audio_players` | Filter | `MDS\Bandcamp\Frontend\Frontend::register_audio_player` | Registers **Bandcamp Album Player** (`bandcamp`) in the Audio Player Manager with declarative styling fields. |
 | `mds_rm_release_links_audio_html` | Filter | `MDS\Bandcamp\Frontend\Frontend::filter_release_links_audio` | Supplies the rendered Bandcamp player (or empty string to fall back to core HTML5 `.mp3`) to the Release Links block. |
 | `mds_rm_release_picker_item` | Filter | `MDS\Bandcamp\Api\RestApi::enrich_release_picker_item` | Appends `album_id`, `url`, and `subdomain` to preloaded `window.mdsRmCatalog` Release records. |
