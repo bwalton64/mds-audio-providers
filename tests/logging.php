@@ -128,16 +128,16 @@ if (
     || $transients[0]['id'] !== '123'
     || $transients[0]['size_bytes'] !== 6
     || $transients[0]['expires'] !== gmdate( 'Y-m-d H:i:s', 1700000000 )
-    || $wpdb->prepared_args[0] !== '\_transient\_mds\_bandcamp%'
-    || $wpdb->prepared_args[1] !== '\_transient\_timeout\_mds\_bandcamp%'
+    || $wpdb->prepared_args[1] !== '\_transient\_mds\_bandcamp%'
+    || $wpdb->prepared_args[2] !== '\_transient\_timeout\_mds\_bandcamp%'
 ) {
     throw new RuntimeException( 'Cache inspection test failed.' );
 }
 
 MDS\Bandcamp\Core\Cache::get_transients_list( '' );
 if (
-    $wpdb->prepared_args[0] !== '\_transient\_%'
-    || $wpdb->prepared_args[1] !== '\_transient\_timeout\_%'
+    $wpdb->prepared_args[1] !== '\_transient\_%'
+    || $wpdb->prepared_args[2] !== '\_transient\_timeout\_%'
 ) {
     throw new RuntimeException( 'Unfiltered cache inspection test failed.' );
 }

@@ -232,6 +232,10 @@ final class RestApi {
 		if ( is_array( $submitted_defaults ) ) {
 			$clean_defaults = BlockDefaults::sanitize( $submitted_defaults );
 			update_option( BlockDefaults::OPTION_KEY, $clean_defaults );
+			if ( function_exists( 'do_action' ) ) {
+				// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Invoking MDS Release Manager core cache purge hook.
+				do_action( 'mds_rm_purge_cache', 'bandcamp_block_defaults' );
+			}
 		}
 
 		return rest_ensure_response(

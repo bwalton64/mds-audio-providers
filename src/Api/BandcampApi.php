@@ -13,6 +13,7 @@ namespace MDS\Bandcamp\Api;
 use DOMDocument;
 use DOMNode;
 use DOMXPath;
+use MDS\Bandcamp\Core\Cache;
 use MDS\Bandcamp\Core\Helpers;
 use MDS\Bandcamp\Core\Logging;
 
@@ -35,6 +36,15 @@ final class BandcampApi {
 	private static string $plugin_key = 'mds_bandcamp';
 
 	/**
+	 * Short negative-cache TTL (in seconds) when Bandcamp returns a transient HTTP/network error,
+	 * preventing request stampedes and rate-limit thrashing.
+	 *
+	 * @since 1.0.2
+	 * @var int
+	 */
+	private const ERROR_BACKOFF_TTL = 180;
+
+	/**
 	 * Retrieve and cache Bandcamp data.
 	 *
 	 * @since 1.0.0
@@ -47,7 +57,7 @@ final class BandcampApi {
 
 		// 1. Try cache first.
 		$cached = get_transient( $key );
-		if ( false !== $cached ) {
+		if ( false !== $cached && is_array( $cached ) ) {
 			$cached['cached'] = true;
 			return $cached;
 		}
@@ -55,25 +65,28 @@ final class BandcampApi {
 		// 2. Make API request.
 		$data = match ( $args['endpoint'] ) {
 			'album'       => self::parse_album_data( self::get_album_data( $args['id'] ) ),
-			'merch'       => self::parse_album_data( self::get_album_data( $args['id'], 'merch' ) ),
 			'discography' => self::get_discography_data( $args['id'] ),
-			'embed'       => self::get_embed_data( $args['id'] ),
 			default       => array(
 				'error'   => true,
 				'message' => 'Invalid endpoint',
 			),
 		};
 
-		// 3. Return error message if failed.
+		// 3. Apply short backoff cache on upstream errors to prevent request stampedes.
 		if ( ! empty( $data['error'] ) ) {
+			if ( in_array( $args['endpoint'], array( 'album', 'discography' ), true ) ) {
+				set_transient( $key, $data, self::ERROR_BACKOFF_TTL );
+				Cache::track_key( $key, $args['endpoint'], $args['id'], self::ERROR_BACKOFF_TTL, strlen( maybe_serialize( $data ) ) );
+			}
 			return $data;
 		}
 
 		// 4. Cache and return data.
 		if ( ! empty( $data ) ) {
 			$settings  = get_option( self::$plugin_key . '__settings', array() );
-			$cache_ttl = isset( $settings['transient'] ) ? (int) $settings['transient'] * MINUTE_IN_SECONDS : 60 * MINUTE_IN_SECONDS;
+			$cache_ttl = isset( $settings['transient'] ) ? max( 1, (int) $settings['transient'] ) * MINUTE_IN_SECONDS : 60 * MINUTE_IN_SECONDS;
 			set_transient( $key, $data, $cache_ttl );
+			Cache::track_key( $key, $args['endpoint'], $args['id'], $cache_ttl, strlen( maybe_serialize( $data ) ) );
 		}
 
 		return $data;

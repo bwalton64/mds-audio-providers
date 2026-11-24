@@ -13,6 +13,7 @@ namespace MDS\Bandcamp\Admin;
 use DOMDocument;
 use DOMNode;
 use MDS\Bandcamp\Api\BandcampApi;
+use MDS\Bandcamp\Core\Cache;
 use MDS\Bandcamp\Core\Dependencies;
 use MDS\Bandcamp\Core\Helpers;
 use MDS\Bandcamp\Core\Templates;
@@ -198,6 +199,7 @@ final class Admin {
 				);
 				update_post_meta( $post_id, 'bandcamp_artist_url', $canonical_url );
 				update_post_meta( $post_id, 'bandcamp_artist_subdomain', $subdomain );
+				Cache::delete_for_target( 'discography', $subdomain );
 			} else {
 				delete_post_meta( $post_id, 'mds_bandcamp_artist_integration' );
 				delete_post_meta( $post_id, 'bandcamp_artist_url' );
@@ -223,6 +225,7 @@ final class Admin {
 				update_post_meta( $post_id, 'mds_bandcamp_integration', $bandcamp_data );
 				update_post_meta( $post_id, 'bandcamp_album_id', (string) $album_id );
 				update_post_meta( $post_id, 'bandcamp_album_url', $url );
+				Cache::delete_for_target( 'album', (string) $album_id );
 			} else {
 				delete_post_meta( $post_id, 'mds_bandcamp_integration' );
 				delete_post_meta( $post_id, 'bandcamp_album_id' );
