@@ -13,7 +13,7 @@ namespace MDS\Bandcamp\Frontend;
 use MDS\Bandcamp\Core\Helpers;
 use MDS\Bandcamp\Core\Templates;
 use MDS\Bandcamp\Core\Utilities;
-use MDS_RM_Audio_Players;
+use MDS\ReleaseManager\Api\ExtensionApi;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -34,7 +34,35 @@ final class Frontend {
 	 */
 	public static function register_hooks(): void {
 		add_filter( 'mds_rm_register_audio_players', array( self::class, 'register_audio_player' ) );
-		add_filter( 'mds_rm_release_links_audio_html', array( self::class, 'filter_release_links_audio' ), 10, 3 );
+		add_filter( 'mds_rm_dynamic_block_context_attrs', array( self::class, 'filter_dynamic_block_attrs' ), 10, 3 );
+	}
+
+	/**
+	 * Supplies Bandcamp album attributes when a Bandcamp block is rendered in an external
+	 * Release context (such as a WooCommerce product page).
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param array<string, mixed> $attrs      Block attributes.
+	 * @param string               $block_name Registered block name.
+	 * @param \WP_Post             $release    Resolved Release post.
+	 * @return array<string, mixed> Enriched block attributes.
+	 */
+	public static function filter_dynamic_block_attrs( array $attrs, string $block_name, \WP_Post $release ): array {
+		if ( ! str_starts_with( $block_name, 'mds-bandcamp/' ) ) {
+			return $attrs;
+		}
+
+		$album_id = Helpers::get_album_id( (int) $release->ID );
+		$url      = Helpers::get_release_url( (int) $release->ID );
+		if ( $album_id > 0 ) {
+			$attrs['albumID'] = (string) $album_id;
+		}
+		if ( '' !== $url ) {
+			$attrs['url'] = $url;
+		}
+
+		return $attrs;
 	}
 
 	/**
@@ -128,8 +156,8 @@ final class Frontend {
 			return '';
 		}
 
-		if ( empty( $settings ) && class_exists( 'MDS_RM_Audio_Players' ) && method_exists( 'MDS_RM_Audio_Players', 'get_player_settings' ) ) {
-			$settings = MDS_RM_Audio_Players::get_player_settings( 'bandcamp' );
+		if ( empty( $settings ) && class_exists( ExtensionApi::class ) ) {
+			$settings = ExtensionApi::get_audio_player_settings( 'bandcamp' );
 		}
 
 		$size    = isset( $settings['size'] ) && in_array( $settings['size'], array( 'small', 'large' ), true ) ? $settings['size'] : 'small';
@@ -192,31 +220,5 @@ final class Frontend {
 			return strtolower( $matches[1] . $matches[1] . $matches[2] . $matches[2] . $matches[3] . $matches[3] );
 		}
 		return $fallback;
-	}
-
-	/**
-	 * Supply the Bandcamp album player for the Release Links block.
-	 *
-	 * Runs on the Release Manager `mds_rm_release_links_audio_html` filter.
-	 * Earlier non-empty markup from another extension is preserved.
-	 *
-	 * @since 1.1.0
-	 *
-	 * @param mixed                $html       Audio markup supplied by an earlier filter.
-	 * @param int|string           $post_id    Release post ID.
-	 * @param array<string, mixed> $attributes Release Links block attributes.
-	 * @return string Player markup, or the incoming markup when unavailable.
-	 */
-	public static function filter_release_links_audio( $html, $post_id, $attributes = array() ): string {
-		$html = is_string( $html ) ? $html : '';
-		if ( '' !== trim( $html ) ) {
-			return $html;
-		}
-
-		return self::render_audio_player(
-			(int) $post_id,
-			array(),
-			is_array( $attributes ) ? $attributes : array()
-		);
 	}
 }

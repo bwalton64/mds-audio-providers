@@ -18,35 +18,36 @@ class WP_Post
     }
 }
 
-final class MDS_RM_Release_Search
-{
-    public static function query( $term )
-    {
-        $GLOBALS['queried_term'] = $term;
-        return $GLOBALS['catalog'];
-    }
-    public static function paginate( $posts, $page, $per_page = 20 )
-    {
-        return array(
-            'posts' => array_slice( $posts, ( $page - 1 ) * $per_page, $per_page ),
-            'pages' => (int) ceil( count( $posts ) / $per_page ),
-        );
-    }
-    public static function describe( $posts )
-    {
-        return array_map(
-            static function ( $post ) {
+eval(
+    'namespace MDS\\ReleaseManager\\Api {
+        final class ExtensionApi {
+            public static function search_releases( array $args = array() ): array {
+                $GLOBALS["queried_term"] = (string) ( $args["search"] ?? "" );
+                $GLOBALS["queried_req_key"] = (string) ( $args["required_meta_key"] ?? "" );
+                $filtered = array();
+                foreach ( $GLOBALS["catalog"] as $post ) {
+                    $bc = $GLOBALS["bandcamp_meta"][ $post->ID ] ?? array();
+                    if ( "bandcamp_album_id" === $GLOBALS["queried_req_key"] && empty( $bc["album_id"] ) ) {
+                        continue;
+                    }
+                    $filtered[] = array(
+                        "id"                 => $post->ID,
+                        "title"              => $post->post_title,
+                        "artist"             => $GLOBALS["artists"][ $post->ID ] ?? "",
+                        "upc"                => "",
+                        "bandcamp_album_id"  => (string) ( $bc["album_id"] ?? "" ),
+                        "bandcamp_album_url" => (string) ( $bc["url"] ?? "" ),
+                    );
+                }
                 return array(
-                    'id'     => $post->ID,
-                    'title'  => $post->post_title,
-                    'artist' => $GLOBALS['artists'][ $post->ID ] ?? '',
-                    'upc'    => '',
+                    "items" => $filtered,
+                    "pages" => count( $filtered ) > 0 ? 1 : 0,
+                    "total" => count( $filtered ),
                 );
-            },
-            $posts
-        );
-    }
-}
+            }
+        }
+    }'
+);
 
 class WP_REST_Request
 {

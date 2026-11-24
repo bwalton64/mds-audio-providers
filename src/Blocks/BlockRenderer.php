@@ -33,8 +33,8 @@ final class BlockRenderer {
 	 * @return void
 	 */
 	public static function enqueue_component_assets( string $slug ): void {
-		if ( class_exists( '\MDS_RM_Assets' ) && method_exists( '\MDS_RM_Assets', 'enqueue_font_awesome' ) ) {
-			\MDS_RM_Assets::enqueue_font_awesome();
+		if ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) ) {
+			\MDS\ReleaseManager\Api\ExtensionApi::enqueue_font_awesome();
 		}
 
 		wp_enqueue_style( 'mds-bc-blocks', MDS_BC_PLUGIN_URL . '/css/blocks.css', array(), MDS_BC_PLUGIN_VERSION );
@@ -84,8 +84,8 @@ final class BlockRenderer {
 
 		if ( '' === $album_id ) {
 			$release_id = ! empty( $attributes['release_id'] ) ? absint( $attributes['release_id'] ) : 0;
-			if ( $release_id <= 0 && ! empty( $attributes['upc'] ) && class_exists( '\MDS_RM_Release_Model' ) && method_exists( '\MDS_RM_Release_Model', 'find_by_upc' ) ) {
-				$found_post = \MDS_RM_Release_Model::find_by_upc( (string) $attributes['upc'] );
+			if ( $release_id <= 0 && ! empty( $attributes['upc'] ) && class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) ) {
+				$found_post = \MDS\ReleaseManager\Api\ExtensionApi::find_release_by_upc( (string) $attributes['upc'] );
 				if ( $found_post && ! empty( $found_post->ID ) ) {
 					$release_id = (int) $found_post->ID;
 				}
@@ -125,8 +125,8 @@ final class BlockRenderer {
 	public static function render_album( array $attributes, $block = null, bool $is_block = false ): string {
 		if ( ! $is_block ) {
 			self::enqueue_component_assets( 'bandcamp-album' );
-		} elseif ( class_exists( '\MDS_RM_Assets' ) && method_exists( '\MDS_RM_Assets', 'enqueue_font_awesome' ) ) {
-			\MDS_RM_Assets::enqueue_font_awesome();
+		} elseif ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) ) {
+			\MDS\ReleaseManager\Api\ExtensionApi::enqueue_font_awesome();
 		}
 
 		$attrs = BlockDefaults::resolve( 'bandcamp-album', $attributes );
@@ -414,8 +414,8 @@ final class BlockRenderer {
 	public static function render_discography( array $attributes, $block = null, bool $is_block = false ): string {
 		if ( ! $is_block ) {
 			self::enqueue_component_assets( 'bandcamp-discography' );
-		} elseif ( class_exists( '\MDS_RM_Assets' ) && method_exists( '\MDS_RM_Assets', 'enqueue_font_awesome' ) ) {
-			\MDS_RM_Assets::enqueue_font_awesome();
+		} elseif ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) ) {
+			\MDS\ReleaseManager\Api\ExtensionApi::enqueue_font_awesome();
 		}
 
 		$attrs = BlockDefaults::resolve( 'bandcamp-discography', $attributes );
@@ -582,8 +582,8 @@ final class BlockRenderer {
 	public static function render_miniplayer( array $attributes, $block = null, bool $is_block = false ): string {
 		if ( ! $is_block ) {
 			self::enqueue_component_assets( 'bandcamp-miniplayer' );
-		} elseif ( class_exists( '\MDS_RM_Assets' ) && method_exists( '\MDS_RM_Assets', 'enqueue_font_awesome' ) ) {
-			\MDS_RM_Assets::enqueue_font_awesome();
+		} elseif ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) ) {
+			\MDS\ReleaseManager\Api\ExtensionApi::enqueue_font_awesome();
 		}
 
 		$attrs = BlockDefaults::resolve( 'bandcamp-miniplayer', $attributes );

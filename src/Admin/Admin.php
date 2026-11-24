@@ -38,54 +38,60 @@ final class Admin {
 	 */
 	public static function register_hooks(): void {
 		add_action( 'mds_rm_register_custom_meta_boxes', array( self::class, 'register_meta_box' ) );
-		add_action( 'mds_rm_save_custom_meta', array( self::class, 'save_meta' ), 10, 2 );
+		add_action( 'mds_rm_save_release_meta', array( self::class, 'save_release_meta' ), 10, 2 );
+		add_action( 'mds_rm_save_artist_meta', array( self::class, 'save_artist_meta' ), 10, 2 );
 		add_action( 'mds_rm_after_buy_now_field', array( self::class, 'render_buy_now_button' ) );
-		add_action( 'init', array( self::class, 'ensure_digital_download_media_format' ), 20 );
+		add_filter( 'mds_rm_default_media_formats', array( self::class, 'register_default_media_formats' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue_metabox_assets' ) );
 		add_action( 'wp_ajax_mds_bc_verify_url', array( self::class, 'ajax_verify_url' ) );
 	}
 
 	/**
-	 * Ensure the "Digital Download" release_media_format term exists on the Hub with its icon.
+	 * Registers the "Digital Download" default media format with Core's hash-seeded registry.
 	 *
-	 * Used when inserting a Bandcamp row into the Release Manager Multi-Format Buy Now repeater.
+	 * @since 2.0.0
 	 *
-	 * @since 1.0.2
+	 * @param array<string, array{label: string, icon: string}> $formats Default media format registry.
+	 * @return array<string, array{label: string, icon: string}> Updated registry.
+	 */
+	public static function register_default_media_formats( array $formats ): array {
+		if ( ! isset( $formats['digital-download'] ) ) {
+			$formats['digital-download'] = array(
+				'label' => __( 'Digital Download', 'mds-bandcamp-integration' ),
+				'icon'  => 'fas fa-download',
+			);
+		}
+		return $formats;
+	}
+
+	/**
+	 * Save Bandcamp Release meta on `mds_rm_save_release_meta`.
 	 *
+	 * @since 2.0.0
+	 *
+	 * @param int     $post_id Release post ID.
+	 * @param WP_Post $post    Release post object.
 	 * @return void
 	 */
-	public static function ensure_digital_download_media_format(): void {
-		if ( ! is_admin() || ! taxonomy_exists( 'release_media_format' ) ) {
-			return;
-		}
+	public static function save_release_meta( int $post_id, WP_Post $post ): void {
+		unset( $post );
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified inside save_meta().
+		self::save_meta( $post_id, $_POST );
+	}
 
-		if ( class_exists( '\MDS_RM_Sync' ) && method_exists( '\MDS_RM_Sync', 'is_hub' ) && ! \MDS_RM_Sync::is_hub() ) {
-			return;
-		}
-
-		$icon_meta_key = class_exists( '\MDS_RM_Release_Model' ) && defined( '\MDS_RM_Release_Model::MEDIA_FORMAT_ICON_META_KEY' )
-			? \MDS_RM_Release_Model::MEDIA_FORMAT_ICON_META_KEY
-			: '_mds_media_format_icon';
-
-		$existing = get_term_by( 'slug', 'digital-download', 'release_media_format' );
-		if ( $existing && ! is_wp_error( $existing ) ) {
-			if ( '' === (string) get_term_meta( (int) $existing->term_id, $icon_meta_key, true ) ) {
-				update_term_meta( (int) $existing->term_id, $icon_meta_key, 'fas fa-download' );
-			}
-			return;
-		}
-
-		$inserted = wp_insert_term(
-			__( 'Digital Download', 'mds-bandcamp-integration' ),
-			'release_media_format',
-			array(
-				'slug' => 'digital-download',
-			)
-		);
-
-		if ( ! is_wp_error( $inserted ) && ! empty( $inserted['term_id'] ) ) {
-			update_term_meta( (int) $inserted['term_id'], $icon_meta_key, 'fas fa-download' );
-		}
+	/**
+	 * Save Bandcamp Artist meta on `mds_rm_save_artist_meta`.
+	 *
+	 * @since 2.0.0
+	 *
+	 * @param int     $post_id Artist post ID.
+	 * @param WP_Post $post    Artist post object.
+	 * @return void
+	 */
+	public static function save_artist_meta( int $post_id, WP_Post $post ): void {
+		unset( $post );
+		// phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce is verified inside save_meta().
+		self::save_meta( $post_id, $_POST );
 	}
 
 	/**

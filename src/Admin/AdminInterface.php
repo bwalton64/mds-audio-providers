@@ -11,7 +11,7 @@ declare(strict_types=1);
 namespace MDS\Bandcamp\Admin;
 
 use MDS\Bandcamp\Blocks\BlockDefaults;
-use MDS_RM_Release_Meta;
+use MDS\ReleaseManager\Api\ExtensionApi;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -52,18 +52,18 @@ final class AdminInterface {
 	 * @return void
 	 */
 	public static function register_settings(): void {
-		if ( class_exists( 'MDS_RM_Release_Meta' ) && method_exists( 'MDS_RM_Release_Meta', 'register_extension_meta' ) ) {
-			MDS_RM_Release_Meta::register_extension_meta( 'bandcamp_album_id' );
-			MDS_RM_Release_Meta::register_extension_meta(
+		if ( class_exists( ExtensionApi::class ) ) {
+			ExtensionApi::register_extension_meta( 'bandcamp_album_id' );
+			ExtensionApi::register_extension_meta(
 				'bandcamp_album_url',
 				array( 'sanitize_callback' => 'esc_url_raw' )
 			);
-			MDS_RM_Release_Meta::register_extension_meta(
+			ExtensionApi::register_extension_meta(
 				'bandcamp_artist_url',
 				array( 'sanitize_callback' => 'esc_url_raw' ),
 				'artist'
 			);
-			MDS_RM_Release_Meta::register_extension_meta(
+			ExtensionApi::register_extension_meta(
 				'bandcamp_artist_subdomain',
 				array(),
 				'artist'

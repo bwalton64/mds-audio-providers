@@ -14,7 +14,7 @@ use MDS\Bandcamp\Admin\AdminInterface;
 use MDS\Bandcamp\Blocks\BlockDefaults;
 use MDS\Bandcamp\Core\Cache;
 use MDS\Bandcamp\Core\Helpers;
-use MDS_RM_Release_Search;
+use MDS\ReleaseManager\Api\ExtensionApi;
 use WP_REST_Request;
 use WP_REST_Response;
 use WP_REST_Server;
@@ -285,24 +285,25 @@ final class RestApi {
 		$items = array();
 		$pages = 0;
 
-		if ( class_exists( 'MDS_RM_Release_Search' ) ) {
+		if ( class_exists( ExtensionApi::class ) ) {
 			$search = sanitize_text_field( (string) $request->get_param( 'search' ) );
 			$page   = max( 1, absint( $request->get_param( 'page' ) ) );
-			$found  = array();
-			foreach ( MDS_RM_Release_Search::query( $search ) as $post ) {
-				if ( Helpers::get_album_id( (int) $post->ID ) > 0 ) {
-					$found[] = $post;
-				}
-			}
-			$paged = MDS_RM_Release_Search::paginate( $found, $page );
-			$pages = $paged['pages'];
-			foreach ( MDS_RM_Release_Search::describe( $paged['posts'] ) as $item ) {
-				$items[] = array(
+			$result = ExtensionApi::search_releases(
+				array(
+					'search'            => $search,
+					'page'              => $page,
+					'required_meta_key' => 'bandcamp_album_id',
+				)
+			);
+			$pages  = (int) ( $result['pages'] ?? 0 );
+			foreach ( (array) ( $result['items'] ?? array() ) as $item ) {
+				$album_id = (string) ( $item['bandcamp_album_id'] ?? Helpers::get_album_id( (int) $item['id'] ) );
+				$items[]  = array(
 					'id'        => $item['id'],
 					'title'     => $item['title'],
 					'artist'    => $item['artist'],
-					'album_id'  => (string) Helpers::get_album_id( (int) $item['id'] ),
-					'url'       => Helpers::get_release_url( (int) $item['id'] ),
+					'album_id'  => $album_id,
+					'url'       => (string) ( $item['bandcamp_album_url'] ?? Helpers::get_release_url( (int) $item['id'] ) ),
 					'subdomain' => Helpers::get_release_subdomain( (int) $item['id'] ),
 				);
 			}

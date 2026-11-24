@@ -28,11 +28,7 @@ final class Dependencies {
 	 * @return bool Whether MDS Release Manager is active.
 	 */
 	public static function is_mds_active(): bool {
-		if ( ! function_exists( 'is_plugin_active' ) ) {
-			require_once ABSPATH . 'wp-admin/includes/plugin.php';
-		}
-
-		return is_plugin_active( 'mds-release-manager/mds-release-manager.php' );
+		return defined( 'MDS_RM_API_VERSION' ) && class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class );
 	}
 
 	/**

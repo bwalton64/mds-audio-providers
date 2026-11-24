@@ -253,10 +253,13 @@ if (
     throw new RuntimeException( 'Settings page did not render the React Admin UI mount point.' );
 }
 
-if ( MDS\Bandcamp\Core\Dependencies::is_mds_active() || 'mds-release-manager/mds-release-manager.php' !== $active_plugin ) {
+if ( MDS\Bandcamp\Core\Dependencies::is_mds_active() ) {
     throw new RuntimeException( 'Inactive dependency check failed.' );
 }
-$active = true;
+define( 'MDS_RM_API_VERSION', '2.0.0' );
+if ( ! class_exists( 'MDS\\ReleaseManager\\Api\\ExtensionApi' ) ) {
+    eval( 'namespace MDS\\ReleaseManager\\Api { final class ExtensionApi {} }' );
+}
 if ( ! MDS\Bandcamp\Core\Dependencies::is_mds_active() ) {
     throw new RuntimeException( 'Active dependency check failed.' );
 }

@@ -45,8 +45,8 @@ final class Assets {
 	 * @return void
 	 */
 	private static function maybe_enqueue_font_awesome(): void {
-		if ( class_exists( '\MDS_RM_Assets' ) && method_exists( '\MDS_RM_Assets', 'enqueue_font_awesome' ) ) {
-			\MDS_RM_Assets::enqueue_font_awesome();
+		if ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) ) {
+			\MDS\ReleaseManager\Api\ExtensionApi::enqueue_font_awesome();
 		}
 	}
 

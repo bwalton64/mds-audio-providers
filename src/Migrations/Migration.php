@@ -137,22 +137,6 @@ final class Migration {
 	}
 
 	/**
-	 * Activates the Bandcamp player in the MDS Release Manager Audio Player Manager once.
-	 *
-	 * @since 1.1.0
-	 *
-	 * @return void
-	 */
-	public static function maybe_activate_audio_player(): void {
-		if ( get_option( 'mds_bandcamp_audio_player_activated' ) ) {
-			return;
-		}
-
-		update_option( 'mds_rm_audio_players', array( 'bandcamp' ) );
-		update_option( 'mds_bandcamp_audio_player_activated', '1' );
-	}
-
-	/**
 	 * Extract album ID from old-style shortcode.
 	 *
 	 * @since 1.0.0

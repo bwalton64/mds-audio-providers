@@ -10,7 +10,7 @@ declare(strict_types=1);
 
 namespace MDS\Bandcamp\Core;
 
-use MDS_RM_Release_Meta;
+use MDS\ReleaseManager\Api\ExtensionApi;
 use WP_Block;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -138,9 +138,9 @@ final class Helpers {
 			}
 		}
 
-		if ( class_exists( 'MDS_RM_Release_Meta' ) && method_exists( 'MDS_RM_Release_Meta', 'resolve_release' ) ) {
+		if ( class_exists( ExtensionApi::class ) ) {
 			$wp_block = ( class_exists( 'WP_Block' ) && $block instanceof WP_Block ) ? $block : null;
-			$post     = MDS_RM_Release_Meta::resolve_release( $attributes, $wp_block, $context_id );
+			$post     = ExtensionApi::resolve_release( $attributes, $wp_block, $context_id );
 			if ( $post && isset( $post->ID ) ) {
 				return (int) $post->ID;
 			}
