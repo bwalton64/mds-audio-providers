@@ -24,7 +24,9 @@ mds-bandcamp-integration/
 │   │   ├── BandcampApi.php                # MDS\Bandcamp\Api\BandcampApi — HTTPS Bandcamp fetcher & HTML/JSON parser
 │   │   └── RestApi.php                    # MDS\Bandcamp\Api\RestApi — GET /mds-bandcamp/v1/releases + catalog enrichment
 │   ├── Blocks/
-│   │   └── Blocks.php                     # MDS\Bandcamp\Blocks\Blocks — Block registration & category
+│   │   ├── BlockDefaults.php              # MDS\Bandcamp\Blocks\BlockDefaults — Site-wide defaults (mds_bc_block_defaults) & render_block_data resolution
+│   │   ├── BlockRenderer.php              # MDS\Bandcamp\Blocks\BlockRenderer — Shared Album, Discography & Miniplayer renderer
+│   │   └── Blocks.php                     # MDS\Bandcamp\Blocks\Blocks — Block registration (3 blocks) & category
 │   ├── Core/
 │   │   ├── Cache.php                      # MDS\Bandcamp\Core\Cache — Transient inspection, clearing, and cache duration
 │   │   ├── Dependencies.php               # MDS\Bandcamp\Core\Dependencies — MDS Release Manager availability checks
@@ -33,12 +35,19 @@ mds-bandcamp-integration/
 │   │   ├── Templates.php                  # MDS\Bandcamp\Core\Templates — Theme-overridable & admin template loader
 │   │   └── Utilities.php                  # MDS\Bandcamp\Core\Utilities — [bandcamp] shortcode, kses rules, contrast helper
 │   ├── Frontend/
-│   │   ├── Assets.php                     # MDS\Bandcamp\Frontend\Assets — Admin, editor, and frontend CSS/JS enqueueing
-│   │   └── Frontend.php                   # MDS\Bandcamp\Frontend\Frontend — Audio Player Manager & Release Links filter
+│   │   ├── Assets.php                     # MDS\Bandcamp\Frontend\Assets — Admin React UI, editor defaults, and frontend CSS/JS enqueueing
+│   │   ├── Frontend.php                   # MDS\Bandcamp\Frontend\Frontend — Audio Player Manager & Release Links filter
+│   │   └── Shortcodes.php                 # MDS\Bandcamp\Frontend\Shortcodes — [bandcamp-album], [bandcamp-discography], [bandcamp-miniplayer]
+│   ├── Integrations/
+│   │   └── Elementor/
+│   │       ├── AlbumWidget.php            # Elementor Bandcamp Album widget (dashicons-album)
+│   │       ├── DiscographyWidget.php      # Elementor Bandcamp Discography widget (dashicons-album)
+│   │       ├── Elementor.php              # Elementor widget registration hook
+│   │       └── MiniplayerWidget.php       # Elementor Bandcamp Miniplayer widget (dashicons-album)
 │   └── Migrations/
 │       ├── Migration.php                  # MDS\Bandcamp\Migrations\Migration — Legacy shortcode & Audio Player migration
 │       └── BlockMigration.php             # MDS\Bandcamp\Migrations\BlockMigration — Batched blocks-for-bandcamp/* migration
-├── blocks/                                # Six Gutenberg blocks (block.json, index.js, index.asset.php, render.php, frontend.css/js)
+├── blocks/                                # Three Gutenberg blocks (bandcamp-album, bandcamp-discography, bandcamp-miniplayer)
 ├── css/                                   # admin.css, blocks.css, public.css
 ├── js/                                    # blocks.js (lightbox), metabox-verify.js, release-picker.js
 ├── templates/

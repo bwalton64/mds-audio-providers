@@ -62,9 +62,6 @@ final class Blocks {
 		$blocks = array(
 			'bandcamp-album',
 			'bandcamp-discography',
-			'bandcamp-embed',
-			'bandcamp-form',
-			'bandcamp-merch',
 			'bandcamp-miniplayer',
 		);
 

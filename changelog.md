@@ -5,6 +5,16 @@
 ### Added
 - Added a **Use Bandcamp URL** button to the MDS Release Manager Commerce meta box (`mds_rm_after_buy_now_field`) that inserts the release's verified Bandcamp URL into the Multi-Format Buy Now repeater with the **Digital Download** (`digital-download`) media format and **Bandcamp** store label.
 - Added `Admin::ensure_digital_download_media_format()` on `init` (priority 20) to ensure the `digital-download` `release_media_format` term and its `fas fa-download` icon exist on the Hub site.
+- Added centralized site-wide default styling and display configuration (`MDS\Bandcamp\Blocks\BlockDefaults`, option `mds_bc_block_defaults`, `GET`/`POST /mds-bandcamp/v1/settings`) applied across Gutenberg blocks, shortcodes, and Elementor widgets.
+- Added a unified PHP renderer (`MDS\Bandcamp\Blocks\BlockRenderer`), supporting shortcodes (`[bandcamp-album]`, `[bandcamp-discography]`, `[bandcamp-miniplayer]`), and Elementor widgets (*Bandcamp Album*, *Bandcamp Discography*, *Bandcamp Miniplayer* with `dashicons-album`).
+
+### Changed
+- Rebuilt the **Bandcamp Integration** settings workspace (`js/admin-settings.js`, `AdminInterface.php`, `css/admin.css`) as a WordPress 7.x React Admin UI with role-separated **Sync & Cache** and **Block Defaults** tabs, a togglable closed-by-default Live Preview pane, `SnackbarList` notices, Heartbeat-refreshed cache diagnostics, and optional Command Palette commands.
+- Updated the three remaining Bandcamp block inspectors (`bandcamp-album`, `bandcamp-discography`, `bandcamp-miniplayer`) to inherit centralized site defaults, expose per-block reset controls, and use modern `@wordpress/components` layout primitives.
+- Replaced all legacy inline Bandcamp logo SVGs in block notices and frontend Bandcamp buttons with Font Awesome `fab fa-bandcamp` while keeping `dashicons-album` as the official plugin, block, and Elementor widget icon.
+
+### Removed
+- Removed the deprecated **Bandcamp Embed** (`bandcamp-embed`), **Bandcamp Form** (`bandcamp-form`), and **Bandcamp Merch** (`bandcamp-merch`) blocks and their asset references.
 
 ## [1.0.1] - 2026-11-22
 

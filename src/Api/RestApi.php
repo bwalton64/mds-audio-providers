@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace MDS\Bandcamp\Api;
 
 use MDS\Bandcamp\Admin\AdminInterface;
+use MDS\Bandcamp\Blocks\BlockDefaults;
 use MDS\Bandcamp\Core\Cache;
 use MDS\Bandcamp\Core\Helpers;
 use MDS_RM_Release_Search;
@@ -93,18 +94,29 @@ final class RestApi {
 			'mds-bandcamp/v1',
 			'/settings',
 			array(
-				'methods'             => WP_REST_Server::CREATABLE,
-				'permission_callback' => array( self::class, 'check_manage_options' ),
-				'args'                => array(
-					'transient' => array(
-						'type'              => 'integer',
-						'required'          => true,
-						'minimum'           => 1,
-						'maximum'           => 1440,
-						'sanitize_callback' => 'absint',
-					),
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'permission_callback' => array( self::class, 'check_manage_options' ),
+					'callback'            => array( self::class, 'handle_get_settings_request' ),
 				),
-				'callback'            => array( self::class, 'handle_save_settings_request' ),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'permission_callback' => array( self::class, 'check_manage_options' ),
+					'args'                => array(
+						'transient'      => array(
+							'type'              => 'integer',
+							'required'          => false,
+							'minimum'           => 1,
+							'maximum'           => 1440,
+							'sanitize_callback' => 'absint',
+						),
+						'block_defaults' => array(
+							'type'     => 'object',
+							'required' => false,
+						),
+					),
+					'callback'            => array( self::class, 'handle_save_settings_request' ),
+				),
 			)
 		);
 
@@ -165,7 +177,38 @@ final class RestApi {
 	}
 
 	/**
-	 * Save Bandcamp plugin settings via REST API.
+	 * Read Bandcamp plugin settings, block defaults, and cache summary via REST API.
+	 *
+	 * @since 1.0.2
+	 *
+	 * @return WP_REST_Response|array<string, mixed> REST response payload.
+	 */
+	public static function handle_get_settings_request() {
+		$settings   = get_option( 'mds_bandcamp__settings', array() );
+		$transients = array();
+		$raw_json   = Cache::get_transients_list( 'mds_bandcamp' );
+		if ( ! empty( $raw_json ) ) {
+			$decoded = json_decode( $raw_json, true );
+			if ( is_array( $decoded ) ) {
+				$transients = array_reverse( $decoded );
+			}
+		}
+		$total_bytes = ! empty( $transients ) ? (int) array_sum( array_column( $transients, 'size_bytes' ) ) : 0;
+
+		return rest_ensure_response(
+			array(
+				'settings'       => is_array( $settings ) ? $settings : array( 'transient' => 60 ),
+				'block_defaults' => BlockDefaults::get_all_effective(),
+				'cache'          => array(
+					'transients' => $transients,
+					'total_size' => (string) size_format( $total_bytes ),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Save Bandcamp plugin settings and/or centralized block defaults via REST API.
 	 *
 	 * @since 1.1.0
 	 *
@@ -173,19 +216,30 @@ final class RestApi {
 	 * @return WP_REST_Response|array<string, mixed> REST response payload.
 	 */
 	public static function handle_save_settings_request( WP_REST_Request $request ) {
-		$sanitized = AdminInterface::sanitize_settings(
-			array(
-				'transient' => $request->get_param( 'transient' ),
-			)
-		);
+		$current_settings = get_option( 'mds_bandcamp__settings', array( 'transient' => 60 ) );
+		$sanitized        = is_array( $current_settings ) ? $current_settings : array( 'transient' => 60 );
 
-		update_option( 'mds_bandcamp__settings', $sanitized );
+		if ( null !== $request->get_param( 'transient' ) ) {
+			$sanitized = AdminInterface::sanitize_settings(
+				array(
+					'transient' => $request->get_param( 'transient' ),
+				)
+			);
+			update_option( 'mds_bandcamp__settings', $sanitized );
+		}
+
+		$submitted_defaults = $request->get_param( 'block_defaults' );
+		if ( is_array( $submitted_defaults ) ) {
+			$clean_defaults = BlockDefaults::sanitize( $submitted_defaults );
+			update_option( BlockDefaults::OPTION_KEY, $clean_defaults );
+		}
 
 		return rest_ensure_response(
 			array(
-				'success'  => true,
-				'settings' => $sanitized,
-				'message'  => __( 'Settings saved.', 'mds-bandcamp-integration' ),
+				'success'        => true,
+				'settings'       => $sanitized,
+				'block_defaults' => BlockDefaults::get_all_effective(),
+				'message'        => __( 'Settings saved.', 'mds-bandcamp-integration' ),
 			)
 		);
 	}

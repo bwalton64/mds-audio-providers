@@ -1,5 +1,6 @@
 .bandcamp-block-message {color:#000;height:auto;padding:2rem 1rem;width:auto;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;}
-.bandcamp-block-message svg {height:2em;width:auto;margin-right:1em;}
+.bandcamp-block-message .fab,
+.bandcamp-block-message svg {font-size:2em;height:2em;line-height:1;width:auto;margin-right:0.6em;display:inline-flex;align-items:center;}
 .bandcamp-block-message svg path {fill: #000;}
 .bandcamp-block-message.bandcamp-block-error {border-color:red;color:red;}
 .bandcamp-block-message.bandcamp-block-error svg path {fill:red;}

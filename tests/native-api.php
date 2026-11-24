@@ -9,7 +9,7 @@ define( 'ABSPATH', __DIR__ . DIRECTORY_SEPARATOR );
 define( 'MDS_BC_PLUGIN_BASENAME', 'mds-bandcamp-integration/mds-bandcamp-integration.php' );
 
 $hooks = array();
-$registered_setting = null;
+$registered_settings = array();
 $settings_group = null;
 $active_plugin = null;
 $active = false;
@@ -42,8 +42,8 @@ function __( $value, $domain )
 
 function register_setting( $group, $name, $args )
 {
-    global $registered_setting;
-    $registered_setting = array( $group, $name, $args );
+    global $registered_settings;
+    $registered_settings[ $name ] = array( $group, $name, $args );
 }
 
 function settings_fields( $group )
@@ -217,7 +217,7 @@ if ( ! in_array( array( MDS\Bandcamp\Admin\AdminInterface::class, 'register_sett
 }
 MDS\Bandcamp\Admin\AdminInterface::register_settings();
 if (
-    $registered_setting !== array(
+    ( $registered_settings['mds_bandcamp__settings'] ?? null ) !== array(
         'mds_bandcamp',
         'mds_bandcamp__settings',
         array(
@@ -225,8 +225,16 @@ if (
             'sanitize_callback' => array( MDS\Bandcamp\Admin\AdminInterface::class, 'sanitize_settings' ),
         ),
     )
+    || ( $registered_settings['mds_bc_block_defaults'] ?? null ) !== array(
+        'mds_bandcamp',
+        'mds_bc_block_defaults',
+        array(
+            'type'              => 'array',
+            'sanitize_callback' => array( MDS\Bandcamp\Blocks\BlockDefaults::class, 'sanitize' ),
+        ),
+    )
 ) {
-    throw new RuntimeException( 'Existing settings option was not registered.' );
+    throw new RuntimeException( 'Expected settings options were not registered.' );
 }
 if (
     MDS\Bandcamp\Admin\AdminInterface::sanitize_settings( array( 'transient' => 5000 ) ) !== array( 'transient' => 1440 )
@@ -239,12 +247,10 @@ ob_start();
 MDS\Bandcamp\Admin\AdminInterface::render_settings_page();
 $settings_html = ob_get_clean();
 if (
-    'mds_bandcamp' !== $settings_group
-    || false === strpos( $settings_html, 'https://example.test/wp-admin/options.php' )
-    || false === strpos( $settings_html, 'name="mds_bandcamp__settings[transient]" value="75"' )
-    || false !== strpos( $settings_html, 'release_player' )
+    false === strpos( $settings_html, 'id="mds-bandcamp-integration-admin-root"' )
+    || false === strpos( $settings_html, 'data-standalone="1"' )
 ) {
-    throw new RuntimeException( 'Settings form did not preserve its option and value.' );
+    throw new RuntimeException( 'Settings page did not render the React Admin UI mount point.' );
 }
 
 if ( MDS\Bandcamp\Core\Dependencies::is_mds_active() || 'mds-release-manager/mds-release-manager.php' !== $active_plugin ) {
@@ -301,8 +307,10 @@ if (
 }
 if (
     ! isset( $rest_routes['/settings'], $rest_routes['/cache/clear'] )
-    || WP_REST_Server::CREATABLE !== $rest_routes['/settings'][2]['methods']
-    || array( MDS\Bandcamp\Api\RestApi::class, 'check_manage_options' ) !== $rest_routes['/settings'][2]['permission_callback']
+    || WP_REST_Server::READABLE !== ( $rest_routes['/settings'][2][0]['methods'] ?? '' )
+    || array( MDS\Bandcamp\Api\RestApi::class, 'check_manage_options' ) !== ( $rest_routes['/settings'][2][0]['permission_callback'] ?? null )
+    || WP_REST_Server::CREATABLE !== ( $rest_routes['/settings'][2][1]['methods'] ?? '' )
+    || array( MDS\Bandcamp\Api\RestApi::class, 'check_manage_options' ) !== ( $rest_routes['/settings'][2][1]['permission_callback'] ?? null )
     || WP_REST_Server::CREATABLE !== $rest_routes['/cache/clear'][2]['methods']
     || array( MDS\Bandcamp\Api\RestApi::class, 'check_manage_options' ) !== $rest_routes['/cache/clear'][2]['permission_callback']
 ) {

@@ -52,7 +52,7 @@ final class BlockMigration {
 			$parsed_block['blockName'] = 'mds-bandcamp/' . substr( $parsed_block['blockName'], strlen( 'blocks-for-bandcamp/' ) );
 			if ( ! is_admin() ) {
 				wp_enqueue_style( 'mds-bc-blocks', MDS_BC_PLUGIN_URL . '/css/blocks.css', array(), MDS_BC_PLUGIN_VERSION );
-				if ( in_array( $parsed_block['blockName'], array( 'mds-bandcamp/bandcamp-album', 'mds-bandcamp/bandcamp-merch' ), true ) ) {
+				if ( 'mds-bandcamp/bandcamp-album' === $parsed_block['blockName'] ) {
 					wp_enqueue_script( 'mds-bc-blocks', MDS_BC_URL . 'js/blocks.js', array(), MDS_BC_PLUGIN_VERSION, true );
 				}
 			}

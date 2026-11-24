@@ -1,6 +1,7 @@
 /* BLOCK */
 .bandcamp-block-message {color:#000;height:auto;padding:2rem 1rem;width:auto;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;}
-.bandcamp-block-message svg {height:2em;width:auto;margin-right:1em;}
+.bandcamp-block-message .fab,
+.bandcamp-block-message svg {font-size:2em;height:2em;line-height:1;width:auto;margin-right:0.6em;display:inline-flex;align-items:center;}
 .bandcamp-block-message svg path {fill: #000;}
 .bandcamp-block-message.bandcamp-block-error {border-color:red;color:red;}
 .bandcamp-block-message.bandcamp-block-error svg path {fill:red;}
@@ -20,9 +21,8 @@
 .bandcamp-miniplayer-text {position:absolute;bottom:0;left:0;padding:5%;width:auto;z-index:3;box-sizing:border-box;font-size:clamp(12px, 1.3vw, 1.3rem);}
 .bandcamp-miniplayer-albumlink {position:absolute;opacity:0;transition:1s ease;bottom:0;right:0;padding:5%;width:auto;z-index:3;box-sizing:border-box;}
 .bandcamp-miniplayer-albumlink a.album-link {background:#fff;color:#000 !important;display:inline-block;width:auto;align-items:center;text-decoration:none;font-size:.7em;padding:5px 8px;border-radius:2px;margin:0;}
-.bandcamp-miniplayer-albumlink a.album-link div {display:flex;align-items:center;}
-.bandcamp-miniplayer-albumlink a.album-link svg {height:1.2em;width:auto;margin:0 .1em 0 .4em;display:inline-block;}
-.bandcamp-miniplayer-albumlink a.album-link svg path {fill:#000 !important;}
+.bandcamp-miniplayer-albumlink a.album-link div {display:flex;align-items:center;gap:0.4em;}
+.bandcamp-miniplayer-albumlink a.album-link .fab {font-size:1.2em;line-height:1;display:inline-block;color:inherit;}
 .bandcamp-miniplayer h3,
 .bandcamp-miniplayer h4,
 .bandcamp-miniplayer p {color:#fff;margin:0;opacity:0;transform:translateY(1em);transition:1s ease;}

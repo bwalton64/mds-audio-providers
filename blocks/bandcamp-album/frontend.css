@@ -1,6 +1,7 @@
 /* BLOCK */
 .bandcamp-block-message {color:#000;height:auto;padding:2rem 1rem;width:100%;border:1px solid #ccc;display:flex;align-items:center;justify-content:center;}
-.bandcamp-block-message svg {height:2em;width:auto;margin-right:1em;}
+.bandcamp-block-message .fab,
+.bandcamp-block-message svg {font-size:2em;height:2em;line-height:1;width:auto;margin-right:0.6em;display:inline-flex;align-items:center;}
 .bandcamp-block-message svg path {fill: #000;}
 .bandcamp-block-message.bandcamp-block-error {border-color:red;color:red;}
 .bandcamp-block-message.bandcamp-block-error svg path {fill:red;}
@@ -12,9 +13,8 @@
 .is-root-container .bandcamp-album a {pointer-events:none;}
 
 .bandcamp-album a.album-link {background:#fff;color:#000 !important;display:inline-block;width:auto;align-items:center;text-decoration:none;font-size:.8em;padding:5px 8px;border-radius:2px;margin:.5rem 0;}
-.bandcamp-album a.album-link div {display:flex;align-items:center;}
-.bandcamp-album a.album-link path {fill:#000;}
-.bandcamp-album a.album-link svg {height:1.2em;width:auto;margin:0 .1em 0 .4em;display:inline-block;}
+.bandcamp-album a.album-link div {display:flex;align-items:center;gap:0.4em;}
+.bandcamp-album a.album-link .fab {font-size:1.2em;line-height:1;display:inline-block;color:inherit;}
 
 .bandcamp-album .bandcamp-album-header-wrap {position:relative;z-index:1;padding:1rem;grid-gap:2rem;display:grid;grid-template-columns:repeat( auto-fill, minmax(200px, 1fr) )}
 

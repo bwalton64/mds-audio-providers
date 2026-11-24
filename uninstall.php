@@ -14,6 +14,7 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 
 $mds_bc_options = array(
 	'mds_bandcamp__settings',
+	'mds_bc_block_defaults',
 	'mds_bandcamp_migration_complete',
 	'mds_bandcamp_audio_player_activated',
 	'mds_bandcamp_block_namespace_migrated',
