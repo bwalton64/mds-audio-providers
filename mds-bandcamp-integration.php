@@ -46,8 +46,6 @@ MDS\Bandcamp\Admin\AdminInterface::register_hooks();
 MDS\Bandcamp\Frontend\Frontend::register_hooks();
 MDS\Bandcamp\Frontend\Assets::register_hooks();
 MDS\Bandcamp\Frontend\Shortcodes::register_hooks();
-MDS\Bandcamp\Migrations\Migration::register_hooks();
-MDS\Bandcamp\Migrations\BlockMigration::register_hooks();
 MDS\Bandcamp\Core\Cache::register_hooks();
 MDS\Bandcamp\Blocks\Blocks::register_hooks();
 MDS\Bandcamp\Blocks\BlockDefaults::register_hooks();

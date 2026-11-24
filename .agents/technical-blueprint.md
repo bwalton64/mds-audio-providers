@@ -38,15 +38,12 @@ mds-bandcamp-integration/
 │   │   ├── Assets.php                     # MDS\Bandcamp\Frontend\Assets — Admin React UI, editor defaults, and frontend CSS/JS enqueueing
 │   │   ├── Frontend.php                   # MDS\Bandcamp\Frontend\Frontend — Audio Player Manager & Release Links filter
 │   │   └── Shortcodes.php                 # MDS\Bandcamp\Frontend\Shortcodes — [bandcamp-album], [bandcamp-discography], [bandcamp-miniplayer]
-│   ├── Integrations/
-│   │   └── Elementor/
-│   │       ├── AlbumWidget.php            # Elementor Bandcamp Album widget (dashicons-album)
-│   │       ├── DiscographyWidget.php      # Elementor Bandcamp Discography widget (dashicons-album)
-│   │       ├── Elementor.php              # Elementor widget registration hook
-│   │       └── MiniplayerWidget.php       # Elementor Bandcamp Miniplayer widget (dashicons-album)
-│   └── Migrations/
-│       ├── Migration.php                  # MDS\Bandcamp\Migrations\Migration — Legacy shortcode & Audio Player migration
-│       └── BlockMigration.php             # MDS\Bandcamp\Migrations\BlockMigration — Batched blocks-for-bandcamp/* migration
+│   └── Integrations/
+│       └── Elementor/
+│           ├── AlbumWidget.php            # Elementor Bandcamp Album widget (dashicons-album)
+│           ├── DiscographyWidget.php      # Elementor Bandcamp Discography widget (dashicons-album)
+│           ├── Elementor.php              # Elementor widget registration hook
+│           └── MiniplayerWidget.php       # Elementor Bandcamp Miniplayer widget (dashicons-album)
 ├── blocks/                                # Three Gutenberg blocks (bandcamp-album, bandcamp-discography, bandcamp-miniplayer)
 ├── css/                                   # admin.css, blocks.css, public.css
 ├── js/                                    # blocks.js (lightbox), metabox-verify.js, release-picker.js

@@ -25,7 +25,6 @@ Code layout
 * src/Core/: dependencies, cache, helpers, logging, templates, and utilities.
 * src/Blocks/ and blocks/: block registration and the six block implementations.
 * src/Frontend/: frontend integration and asset registration.
-* src/Migrations/: legacy settings, shortcode, and block namespace migrations.
 * templates/, css/, and js/: frontend template fallback and shared assets.
 
 Frontend overrides remain available at
@@ -116,7 +115,7 @@ Run these commands from the plugin directory:
 * php tests/logging.php
 * php tests/native-api.php
 * php tests/block-metadata.php
-* php tests/block-migration.php
+* php tests/block-defaults.php
 * php tests/templates.php
 * php tests/release-links-player.php
 * php tests/releases-endpoint.php

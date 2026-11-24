@@ -68,7 +68,6 @@ Production classes use Composer PSR-4 autoloading under the `MDS\Bandcamp\` root
 - `src/Core/`: `Cache`, `Dependencies`, `Helpers`, `Logging`, `Templates`, and `Utilities`.
 - `src/Blocks/` and `blocks/`: block registration (`Blocks`) and the six block implementations.
 - `src/Frontend/`: `Frontend` (Audio Player Manager & Release Links filter) and `Assets` (script/style registration).
-- `src/Migrations/`: `Migration` (legacy shortcode/player migration) and `BlockMigration` (batched block namespace migration).
 - `templates/`, `css/`, and `js/`: frontend template fallback (`templates/frontend-widget.php`), plugin-owned admin meta-box view (`templates/admin/admin-settings.php`), and shared assets.
 
 The template loader checks `mds-bandcamp-integration/<template>` with WordPress
@@ -140,7 +139,7 @@ php tests/bootstrap.php
 php tests/logging.php
 php tests/native-api.php
 php tests/block-metadata.php
-php tests/block-migration.php
+php tests/block-defaults.php
 php tests/templates.php
 php tests/release-links-player.php
 php tests/releases-endpoint.php

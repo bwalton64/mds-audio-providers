@@ -15,6 +15,8 @@
 - Replaced all legacy inline Bandcamp logo SVGs in block notices and frontend Bandcamp buttons with Font Awesome `fab fa-bandcamp` while keeping `dashicons-album` as the official plugin, block, and Elementor widget icon.
 
 ### Removed
+- Removed legacy `bandcamp_shortcode` post-meta migration (`src/Migrations/Migration.php` and the `src/Migrations/` directory).
+- Removed legacy `blocks-for-bandcamp/*` block compatibility and migration (`src/Migrations/BlockMigration.php` and `tests/block-migration.php`).
 - Removed the deprecated **Bandcamp Embed** (`bandcamp-embed`), **Bandcamp Form** (`bandcamp-form`), and **Bandcamp Merch** (`bandcamp-merch`) blocks and their asset references.
 
 ## [1.0.1] - 2026-11-22
