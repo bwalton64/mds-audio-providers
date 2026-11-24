@@ -1,44 +1,41 @@
 <?php
 /**
- * Dependency checks for the MDS Bandcamp Integration plugin.
+ * Dependency checks for MDS Audio Providers.
  *
- * @package MDS\Bandcamp
- * @since   1.0.0
+ * @package MDS\AudioProviders
+ * @since   2.0.0
  */
 
 declare(strict_types=1);
 
-namespace MDS\Bandcamp\Core;
+namespace MDS\AudioProviders\Core;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Checks whether the plugins required by this integration are active.
+ * Verifies MDS Release Manager and its Unified Audio API are active.
  *
- * @since 1.0.0
+ * @since 2.0.0
  */
 final class Dependencies {
+
 	/**
-	 * Check whether MDS Release Manager is active.
+	 * Checks whether MDS Release Manager core is loaded.
 	 *
-	 * @since 1.0.0
-	 *
-	 * @return bool Whether MDS Release Manager is active.
+	 * @return bool True when MDS Release Manager is active.
 	 */
-	public static function is_mds_active(): bool {
-		return defined( 'MDS_RM_API_VERSION' ) && class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class );
+	public static function is_release_manager_active(): bool {
+		return defined( 'MDS_RM_VERSION' ) || class_exists( '\\MDS\\ReleaseManager\\Plugin' );
 	}
 
 	/**
-	 * Check whether the integrated Bandcamp block features are available.
+	 * Checks whether the core Unified Audio API interface is available.
 	 *
-	 * @since 1.0.0
-	 *
-	 * @return bool Whether Bandcamp block features are available.
+	 * @return bool True when `AudioProviderInterface` exists.
 	 */
-	public static function is_bandcamp_active(): bool {
-		return true;
+	public static function has_unified_audio_api(): bool {
+		return interface_exists( '\\MDS\\ReleaseManager\\Core\\Audio\\AudioProviderInterface' );
 	}
 }

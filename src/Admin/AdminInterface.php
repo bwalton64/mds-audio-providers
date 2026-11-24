@@ -1,181 +1,132 @@
 <?php
 /**
- * Admin settings interface for MDS Bandcamp Integration.
+ * WordPress 7.x React Admin Interface for MDS Audio Providers.
  *
- * @package MDS\Bandcamp
- * @since   1.0.0
+ * @package MDS\AudioProviders
+ * @since   2.0.0
  */
 
 declare(strict_types=1);
 
-namespace MDS\Bandcamp\Admin;
+namespace MDS\AudioProviders\Admin;
 
-use MDS\Bandcamp\Blocks\BlockDefaults;
-use MDS\ReleaseManager\Api\ExtensionApi;
+use MDS\AudioProviders\Api\RestApi;
+use MDS\AudioProviders\Core\Dependencies;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Manages the plugin settings page, Release Manager tab mount point, and option registration.
+ * Registers the Audio Providers settings page and enqueues the React admin UI.
  *
- * @since 1.0.0
+ * @since 2.0.0
  */
 final class AdminInterface {
-	/**
-	 * Settings option prefix preserved for backwards compatibility with `mds_bandcamp__settings`.
-	 *
-	 * @since 1.0.0
-	 * @var string
-	 */
-	private static string $plugin_key = 'mds_bandcamp';
 
 	/**
-	 * Register settings and admin menu hooks.
+	 * Admin page slug.
 	 *
-	 * @since 1.0.0
+	 * @var string
+	 */
+	public const PAGE_SLUG = 'mds-audio-providers';
+
+	/**
+	 * Stored hook suffix for the registered admin page.
+	 *
+	 * @var string
+	 */
+	private static string $hook_suffix = '';
+
+	/**
+	 * Registers admin menu and asset hooks.
 	 *
 	 * @return void
 	 */
 	public static function register_hooks(): void {
-		add_action( 'admin_init', array( self::class, 'register_settings' ) );
-		add_action( 'admin_menu', array( self::class, 'add_settings_menu' ) );
-		add_filter( 'mds_rm_site_settings_tabs', array( self::class, 'register_release_manager_tab' ) );
+		add_action( 'admin_menu', array( self::class, 'register_menu' ), 30 );
+		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue_assets' ) );
 	}
 
 	/**
-	 * Register the plugin settings options and Release Manager extension meta.
-	 *
-	 * @since 1.0.0
+	 * Adds the Audio Providers page under MDS Release Manager (or Settings fallback).
 	 *
 	 * @return void
 	 */
-	public static function register_settings(): void {
-		if ( class_exists( ExtensionApi::class ) ) {
-			ExtensionApi::register_extension_meta( 'bandcamp_album_id' );
-			ExtensionApi::register_extension_meta(
-				'bandcamp_album_url',
-				array( 'sanitize_callback' => 'esc_url_raw' )
-			);
-			ExtensionApi::register_extension_meta(
-				'bandcamp_artist_url',
-				array( 'sanitize_callback' => 'esc_url_raw' ),
-				'artist'
-			);
-			ExtensionApi::register_extension_meta(
-				'bandcamp_artist_subdomain',
-				array(),
-				'artist'
-			);
-		}
+	public static function register_menu(): void {
+		$parent = Dependencies::is_release_manager_active()
+			? 'edit.php?post_type=release'
+			: 'options-general.php';
 
-		register_setting(
-			self::$plugin_key,
-			self::$plugin_key . '__settings',
-			array(
-				'type'              => 'array',
-				'sanitize_callback' => array( self::class, 'sanitize_settings' ),
-			)
-		);
-
-		register_setting(
-			self::$plugin_key,
-			BlockDefaults::OPTION_KEY,
-			array(
-				'type'              => 'array',
-				'sanitize_callback' => array( BlockDefaults::class, 'sanitize' ),
-			)
-		);
-	}
-
-	/**
-	 * Sanitize the plugin settings.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @param mixed $settings Submitted settings.
-	 * @return array{transient?: int} Sanitized settings.
-	 */
-	public static function sanitize_settings( $settings ): array {
-		if ( ! is_array( $settings ) ) {
-			return array();
-		}
-
-		$transient = (int) ( $settings['transient'] ?? 60 );
-		$transient = max( 1, min( 1440, $transient ) );
-
-		return array(
-			'transient' => $transient,
-		);
-	}
-
-	/**
-	 * Add the standalone settings page.
-	 *
-	 * @since 1.0.0
-	 *
-	 * @return void
-	 */
-	public static function add_settings_menu(): void {
-		add_submenu_page(
-			'options-general.php',
-			__( 'MDS Bandcamp Integration', 'mds-bandcamp-integration' ),
-			__( 'MDS Bandcamp Integration', 'mds-bandcamp-integration' ),
+		$hook = add_submenu_page(
+			$parent,
+			__( 'Audio Providers', 'mds-audio-providers' ),
+			__( 'Audio Providers', 'mds-audio-providers' ),
 			'manage_options',
-			self::$plugin_key,
-			array( self::class, 'render_settings_page' ),
-			99
+			self::PAGE_SLUG,
+			array( self::class, 'render_page' )
 		);
+
+		self::$hook_suffix = is_string( $hook ) ? $hook : '';
 	}
 
 	/**
-	 * Render the standalone settings page React mount point.
-	 *
-	 * @since 1.0.0
+	 * Renders the React root mount point.
 	 *
 	 * @return void
 	 */
-	public static function render_settings_page(): void {
+	public static function render_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You are not allowed to manage Bandcamp settings.', 'mds-bandcamp-integration' ) );
+			return;
 		}
 		?>
-		<div class="wrap mds-bc-admin-wrap">
-			<div id="mds-bandcamp-integration-admin-root" data-standalone="1"></div>
+		<div class="wrap mds-ap-admin-wrap">
+			<div id="mds-audio-providers-admin-root"></div>
 		</div>
 		<?php
 	}
 
 	/**
-	 * Add the Bandcamp tab to MDS Release Manager settings.
+	 * Enqueues the React Admin UI script and styles on the Audio Providers screen only.
 	 *
-	 * @since 1.0.0
-	 *
-	 * @param array<string, array<string, mixed>> $tabs Existing settings tabs.
-	 * @return array<string, array<string, mixed>> Settings tabs including Bandcamp.
-	 */
-	public static function register_release_manager_tab( array $tabs ): array {
-		$tabs['bandcamp'] = array(
-			'label'  => __( 'Bandcamp Integration', 'mds-bandcamp-integration' ),
-			'render' => array( self::class, 'render_settings_content' ),
-		);
-		return $tabs;
-	}
-
-	/**
-	 * Render the React mount point inside the MDS Release Manager settings tab.
-	 *
-	 * @since 1.0.0
-	 *
+	 * @param string $hook_suffix Current admin screen hook suffix.
 	 * @return void
 	 */
-	public static function render_settings_content(): void {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You are not allowed to manage Bandcamp settings.', 'mds-bandcamp-integration' ) );
+	public static function enqueue_assets( string $hook_suffix ): void {
+		if ( '' === self::$hook_suffix || $hook_suffix !== self::$hook_suffix ) {
+			return;
 		}
-		?>
-		<div id="mds-bandcamp-integration-admin-root" data-standalone="0"></div>
-		<?php
+
+		wp_enqueue_style( 'wp-components' );
+		if ( file_exists( MDS_AP_PATH . 'css/admin.css' ) ) {
+			wp_enqueue_style(
+				'mds-ap-admin',
+				MDS_AP_URL . 'css/admin.css',
+				array( 'wp-components' ),
+				(string) filemtime( MDS_AP_PATH . 'css/admin.css' )
+			);
+		}
+
+		$script_rel = 'js/admin-settings.js';
+		wp_enqueue_script(
+			'mds-ap-admin',
+			MDS_AP_URL . $script_rel,
+			array( 'wp-element', 'wp-components', 'wp-api-fetch', 'wp-i18n', 'wp-a11y' ),
+			file_exists( MDS_AP_PATH . $script_rel ) ? (string) filemtime( MDS_AP_PATH . $script_rel ) : MDS_AP_VERSION,
+			true
+		);
+
+		$boot_data = array(
+			'restBase' => '/' . RestApi::NAMESPACE,
+			'hasCore'  => Dependencies::has_unified_audio_api(),
+			'initial'  => RestApi::build_payload(),
+		);
+
+		$encoded = wp_json_encode( $boot_data, JSON_INVALID_UTF8_SUBSTITUTE );
+		wp_add_inline_script(
+			'mds-ap-admin',
+			'window.mdsAudioProvidersAdmin = ' . ( is_string( $encoded ) ? $encoded : '{}' ) . ';',
+			'before'
+		);
 	}
 }

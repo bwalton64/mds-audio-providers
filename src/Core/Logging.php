@@ -1,52 +1,44 @@
 <?php
 /**
- * Debug logging for the MDS Bandcamp Integration plugin.
+ * Lightweight structured logger for MDS Audio Providers.
  *
- * @package MDS\Bandcamp
- * @since   1.0.0
+ * @package MDS\AudioProviders
+ * @since   2.0.0
  */
 
 declare(strict_types=1);
 
-namespace MDS\Bandcamp\Core;
+namespace MDS\AudioProviders\Core;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Writes plugin messages to the WordPress-configured PHP error log.
+ * Logs diagnostic and error events when WP_DEBUG is enabled.
  *
- * @since 1.0.0
+ * @since 2.0.0
  */
 final class Logging {
+
 	/**
-	 * Write a plugin message when WordPress debug logging is enabled.
+	 * Writes a structured log message when debugging is active.
 	 *
-	 * @since 1.0.0
-	 *
-	 * @param string               $level   Logging level.
-	 * @param string               $message Message text to log.
-	 * @param array<string, mixed> $context Optional additional context.
-	 * @return bool Whether the complete message was written.
+	 * @param string               $level   Severity level (`info`, `warning`, `error`).
+	 * @param string               $message Human-readable message.
+	 * @param array<string, mixed> $context Optional structured context.
+	 * @return void
 	 */
-	public static function log( string $level, string $message, array $context = array() ): bool {
-		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG || ! defined( 'WP_DEBUG_LOG' ) || ! WP_DEBUG_LOG ) {
-			return false;
+	public static function log( string $level, string $message, array $context = array() ): void {
+		if ( ! defined( 'WP_DEBUG' ) || ! WP_DEBUG ) {
+			return;
+		}
+		if ( ! defined( 'WP_DEBUG_LOG' ) || ! WP_DEBUG_LOG ) {
+			return;
 		}
 
-		$entry = sprintf( '[MDS Bandcamp Integration] [%s] %s', strtoupper( $level ), $message );
-		if ( $context ) {
-			$encoded_context = wp_json_encode( $context, JSON_UNESCAPED_SLASHES );
-			if ( false === $encoded_context ) {
-				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional WP_DEBUG_LOG logging.
-				error_log( $entry . ' [Context could not be encoded]' );
-				return false;
-			}
-			$entry .= ' ' . $encoded_context;
-		}
-
-		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Intentional WP_DEBUG_LOG logging.
-		return error_log( $entry );
+		$suffix = ! empty( $context ) ? ' ' . wp_json_encode( $context ) : '';
+		// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Guarded by WP_DEBUG and WP_DEBUG_LOG.
+		error_log( sprintf( '[MDS Audio Providers][%s] %s%s', strtoupper( $level ), $message, $suffix ) );
 	}
 }

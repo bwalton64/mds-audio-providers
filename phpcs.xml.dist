@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <ruleset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	name="MDS Bandcamp Integration Coding Standards"
+	name="MDS Audio Providers Coding Standards"
 	xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/squizlabs/PHP_CodeSniffer/master/phpcs.xsd">
 
-	<description>WordPress Coding Standards (WPCS) with PHP 8.0 compatibility and Composer PSR-4 support for MDS Bandcamp Integration.</description>
+	<description>WordPress Coding Standards (WPCS) with PHP 8.0 compatibility and Composer PSR-4 support for MDS Audio Providers.</description>
 
 	<!-- Scan all PHP files in the repository -->
 	<file>.</file>
@@ -46,7 +46,7 @@
 	<rule ref="WordPress.WP.I18n">
 		<properties>
 			<property name="text_domain" type="array">
-				<element value="mds-bandcamp-integration"/>
+				<element value="mds-audio-providers"/>
 			</property>
 		</properties>
 	</rule>
@@ -55,9 +55,11 @@
 	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
 		<properties>
 			<property name="prefixes" type="array">
+				<element value="mds_ap_"/>
+				<element value="MDS_AP_"/>
 				<element value="mds_bc_"/>
 				<element value="MDS_BC_"/>
-				<element value="MDS\Bandcamp"/>
+				<element value="MDS\AudioProviders"/>
 			</property>
 		</properties>
 	</rule>

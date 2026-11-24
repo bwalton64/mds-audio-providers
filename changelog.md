@@ -3,6 +3,13 @@
 ## [Unreleased]
 
 ### Added
+- Repurposed `mds-bandcamp-integration` into **MDS Audio Providers** (`MDS\AudioProviders\`, `mds-audio-providers.php`) registering 5 providers into MDS Release Manager's Unified Audio API (`mds_rm_audio_providers`): **Apple Music** (zero-auth iTunes UPC lookup, native 30s `.m4a` previews), **Deezer** (zero-auth UPC lookup, native 30s `.mp3` previews), **Bandcamp** (JIT `tralbum_details` → `data-player-data` → `EmbeddedPlayer` iframe fallback), **SoundCloud** (OAuth 2.1 Client Credentials `/preview` & `/streams`), and **Spotify** (OAuth 2.0 Client Credentials UPC lookup + conditional native `preview_url`).
+- Added encrypted/masked OAuth credential storage (`MDS\AudioProviders\Providers\Credentials` with `wp-config.php` constant overrides), a SoundCloud Track/Playlist URL field in the Release Audio Providers metabox, and a rebuilt WP 7.x React **Audio Providers** admin UI (`js/admin-settings.js`, `src/Admin/AdminInterface.php`, `mds-ap/v1` REST routes) for provider priority ordering, enable/disable toggles, live connection testing, and cache diagnostics.
+
+### Removed
+- Retired all legacy Bandcamp-specific Gutenberg blocks (`bandcamp-album`, `bandcamp-discography`, `bandcamp-miniplayer`), shortcodes, Elementor widgets, block-defaults backend, and legacy frontend templates in favor of `mds-release-manager`'s unified mobile-first **Release Player**.
+
+### Added (Legacy Bandcamp Integration)
 - Added a **Use Bandcamp URL** button to the MDS Release Manager Commerce meta box (`mds_rm_after_buy_now_field`) that inserts the release's verified Bandcamp URL into the Multi-Format Buy Now repeater with the **Digital Download** (`digital-download`) media format and **Bandcamp** store label.
 - Added `Admin::ensure_digital_download_media_format()` on `init` (priority 20) to ensure the `digital-download` `release_media_format` term and its `fas fa-download` icon exist on the Hub site.
 - Added centralized site-wide default styling and display configuration (`MDS\Bandcamp\Blocks\BlockDefaults`, option `mds_bc_block_defaults`, `GET`/`POST /mds-bandcamp/v1/settings`) applied across Gutenberg blocks, shortcodes, and Elementor widgets.
