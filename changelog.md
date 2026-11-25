@@ -2,7 +2,10 @@
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-25
+
 ### Added
+- Unified the **Audio Providers** settings tab (`js/admin-settings.js`) with MDS Release Manager's shared `SectionInfo` and `RepeaterCard` design primitives (inline enable toggles, priority arrows, status badges, collapsible credential drawers, no duplicate heading), restyled the Release Audio Providers metabox (`src/Admin/Admin.php`) with `.mds-section-info` / `.mds-control-group`, and wired `js/metabox-verify.js` to the `mds-rm:add-buy-now-link` CustomEvent bridge for React Buy Now state compatibility.
 - Repurposed `mds-bandcamp-integration` into **MDS Audio Providers** (`MDS\AudioProviders\`, `mds-audio-providers.php`) registering 5 providers into MDS Release Manager's Unified Audio API (`mds_rm_audio_providers`): **Apple Music** (zero-auth iTunes UPC lookup, native 30s `.m4a` previews), **Deezer** (zero-auth UPC lookup, native 30s `.mp3` previews), **Bandcamp** (JIT `tralbum_details` → `data-player-data` → `EmbeddedPlayer` iframe fallback), **SoundCloud** (OAuth 2.1 Client Credentials `/preview` & `/streams`), and **Spotify** (OAuth 2.0 Client Credentials UPC lookup + conditional native `preview_url`).
 - Added encrypted/masked OAuth credential storage (`MDS\AudioProviders\Providers\Credentials` with `wp-config.php` constant overrides), a SoundCloud Track/Playlist URL field in the Release Audio Providers metabox, and a rebuilt WP 7.x React **Audio Providers** admin UI (`js/admin-settings.js`, `src/Admin/AdminInterface.php`, `mds-ap/v1` REST routes) for provider priority ordering, enable/disable toggles, live connection testing, and cache diagnostics.
 

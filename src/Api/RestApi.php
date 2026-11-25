@@ -143,7 +143,9 @@ final class RestApi {
 			}
 		}
 
-		if ( class_exists( '\\MDS\\ReleaseManager\\Core\\Audio\\AudioApi' ) ) {
+		if ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) && method_exists( \MDS\ReleaseManager\Api\ExtensionApi::class, 'reset_audio_cache' ) ) {
+			\MDS\ReleaseManager\Api\ExtensionApi::reset_audio_cache();
+		} elseif ( class_exists( '\\MDS\\ReleaseManager\\Core\\Audio\\AudioApi' ) ) {
 			\MDS\ReleaseManager\Core\Audio\AudioApi::reset_cache();
 		}
 
@@ -211,8 +213,8 @@ final class RestApi {
 	 * @return array<string, mixed>
 	 */
 	public static function build_payload(): array {
-		$providers = class_exists( '\\MDS\\ReleaseManager\\Core\\Audio\\AudioApi' )
-			? \MDS\ReleaseManager\Core\Audio\AudioApi::get_provider_descriptors()
+		$providers = class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class )
+			? \MDS\ReleaseManager\Api\ExtensionApi::get_audio_providers()
 			: array();
 
 		return array(

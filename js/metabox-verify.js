@@ -6,9 +6,6 @@
 		const $urlInput = $('#mds_bc_url');
 		const $albumIdInput = $('#mds_bc_album_id');
 		const $verifyBtn = $('#mds_bc_verify_btn');
-		const $artistUrlInput = $('#mds_bc_artist_url');
-		const $artistSubdomainInput = $('#mds_bc_artist_subdomain');
-		const $verifyArtistBtn = $('#mds_bc_verify_artist_btn');
 		const $statusDiv = $('#mds_bc_status');
 		const $useBandcampBtn = $('#mds_use_bandcamp_url_btn');
 
@@ -85,14 +82,32 @@
 			});
 
 			$useBandcampBtn.on('click', function () {
-				const repeater = document.getElementById('mds_buy_now_links_wrapper');
-				const template = document.getElementById('mds_buy_now_row_template');
-				if (!repeater || !template) {
+				const url = getVerifiedBandcampUrl();
+				if (!url) {
 					return;
 				}
 
-				const url = getVerifiedBandcampUrl();
-				if (!url) {
+				const storeName = messages.storeName || 'Bandcamp';
+
+				// Prefer the MDS Release Manager React Buy Now bridge when available.
+				const addEvent = new CustomEvent('mds-rm:add-buy-now-link', {
+					cancelable: true,
+					detail: {
+						format: 'digital-download',
+						store: storeName,
+						url: url,
+						addedMessage: messages.buyNowAdded || 'Added Bandcamp URL to Buy Now formats.',
+						existsMessage: messages.buyNowExists || 'This Bandcamp URL is already listed in Buy Now.',
+					},
+				});
+				window.dispatchEvent(addEvent);
+				if (addEvent.defaultPrevented) {
+					return;
+				}
+
+				const repeater = document.getElementById('mds_buy_now_links_wrapper');
+				const template = document.getElementById('mds_buy_now_row_template');
+				if (!repeater || !template) {
 					return;
 				}
 
@@ -111,8 +126,6 @@
 					);
 					return;
 				}
-
-				const storeName = messages.storeName || 'Bandcamp';
 				const emptyRow = Array.from(repeater.querySelectorAll('.mds-buy-now-row')).find(
 					function (row) {
 						const u = row.querySelector('input[name="mds_buy_now_url[]"]');
@@ -150,23 +163,11 @@
 				return;
 			}
 
-			verifyUrl(url, 'release');
+			verifyUrl(url);
 		});
 
-		$verifyArtistBtn.on('click', function () {
-			const url = $artistUrlInput.val().trim();
-
-			if (!url) {
-				showStatus('error', 'Please enter a Bandcamp Artist URL.');
-				return;
-			}
-
-			verifyUrl(url, 'artist');
-		});
-
-		function verifyUrl(url, mode) {
-			const $btn = mode === 'artist' ? $verifyArtistBtn : $verifyBtn;
-			$btn.prop('disabled', true).text('Verifying...');
+		function verifyUrl(url) {
+			$verifyBtn.prop('disabled', true).text('Verifying...');
 			$statusDiv.hide();
 
 			$.ajax({
@@ -176,41 +177,24 @@
 					action: 'mds_bc_verify_url',
 					nonce: config.nonce,
 					url: url,
-					mode: mode,
 				},
 				success: function (response) {
 					if (response.success) {
-						if (mode === 'artist') {
-							if (response.data.artist_url) {
-								$artistUrlInput.val(response.data.artist_url);
-							}
-							$artistSubdomainInput.val(response.data.subdomain || '');
-							showStatus('success', 'Verified Bandcamp Artist subdomain: ' + response.data.subdomain);
-						} else {
-							$albumIdInput.val(response.data.album_id);
-							showStatus('success', 'Album ID found: ' + response.data.album_id);
-						}
+						$albumIdInput.val(response.data.album_id);
+						showStatus('success', 'Album ID found: ' + response.data.album_id);
 					} else {
 						showStatus('error', response.data.message || 'Failed to verify URL.');
-						if (mode === 'artist') {
-							$artistSubdomainInput.val('');
-						} else {
-							$albumIdInput.val('');
-						}
+						$albumIdInput.val('');
 					}
 					syncBuyNowButtonState();
 				},
 				error: function () {
 					showStatus('error', 'Network error. Please try again.');
-					if (mode === 'artist') {
-						$artistSubdomainInput.val('');
-					} else {
-						$albumIdInput.val('');
-					}
+					$albumIdInput.val('');
 					syncBuyNowButtonState();
 				},
 				complete: function () {
-					$btn.prop('disabled', false).text('Verify');
+					$verifyBtn.prop('disabled', false).text('Verify URL');
 				},
 			});
 		}

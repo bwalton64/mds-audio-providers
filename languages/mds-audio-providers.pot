@@ -1,0 +1,351 @@
+# Copyright (C) 2026 Musty Dungeon Studios
+# This file is distributed under the same license as the MDS Audio Providers plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: MDS Audio Providers 2.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/mds-audio-providers\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-11-25T18:19:36+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: mds-audio-providers\n"
+
+#. Plugin Name of the plugin
+#: mds-audio-providers.php
+#: js/admin-settings.js:371
+msgid "MDS Audio Providers"
+msgstr ""
+
+#. Description of the plugin
+#: mds-audio-providers.php
+msgid "Audio preview providers (Apple Music, Deezer, Bandcamp, SoundCloud, Spotify) for MDS Release Manager's Unified Audio API."
+msgstr ""
+
+#. Author of the plugin
+#: mds-audio-providers.php
+msgid "Musty Dungeon Studios"
+msgstr ""
+
+#: src/Admin/Admin.php:59
+#: src/Admin/Admin.php:271
+msgid "Digital Download"
+msgstr ""
+
+#: src/Admin/Admin.php:77
+msgid "Use Bandcamp URL"
+msgstr ""
+
+#: src/Admin/Admin.php:98
+msgid "Audio Providers (Bandcamp & SoundCloud)"
+msgstr ""
+
+#: src/Admin/Admin.php:123
+msgid "Automatic & Provider-Specific Audio Sources"
+msgstr ""
+
+#: src/Admin/Admin.php:125
+msgid "Apple Music, Deezer, and Spotify resolve automatically from this Release’s Barcode (UPC/EAN). Configure Bandcamp or SoundCloud below to enable those providers for this release."
+msgstr ""
+
+#: src/Admin/Admin.php:131
+#: src/Admin/Admin.php:270
+#: src/Providers/BandcampProvider.php:55
+msgid "Bandcamp"
+msgstr ""
+
+#: src/Admin/Admin.php:134
+msgid "Bandcamp Release URL"
+msgstr ""
+
+#: src/Admin/Admin.php:145
+msgid "Verify URL"
+msgstr ""
+
+#: src/Admin/Admin.php:151
+msgid "Bandcamp Album ID"
+msgstr ""
+
+#: src/Admin/Admin.php:161
+msgid "Populated automatically when you verify a Bandcamp album URL."
+msgstr ""
+
+#: src/Admin/Admin.php:168
+#: src/Providers/SoundCloudProvider.php:57
+msgid "SoundCloud"
+msgstr ""
+
+#: src/Admin/Admin.php:170
+msgid "SoundCloud Track / Playlist URL"
+msgstr ""
+
+#: src/Admin/Admin.php:180
+msgid "Optional. Requires SoundCloud API credentials under Releases → Settings → Audio Providers."
+msgstr ""
+
+#: src/Admin/Admin.php:272
+msgid "Added Bandcamp URL to Buy Now formats."
+msgstr ""
+
+#: src/Admin/Admin.php:273
+msgid "This Bandcamp URL is already listed in Buy Now."
+msgstr ""
+
+#: src/Admin/Admin.php:290
+msgid "Permission denied."
+msgstr ""
+
+#: src/Admin/Admin.php:296
+msgid "Invalid URL format."
+msgstr ""
+
+#: src/Admin/Admin.php:301
+msgid "Failed to fetch Bandcamp page."
+msgstr ""
+
+#: src/Admin/Admin.php:306
+msgid "Could not find a Bandcamp Album ID on this page."
+msgstr ""
+
+#: src/Admin/AdminInterface.php:62
+#: src/Admin/AdminInterface.php:80
+#: src/Admin/AdminInterface.php:81
+msgid "Audio Providers"
+msgstr ""
+
+#: src/Api/RestApi.php:118
+msgid "Invalid settings payload."
+msgstr ""
+
+#: src/Api/RestApi.php:160
+#: js/admin-settings.js:156
+msgid "Audio provider settings saved."
+msgstr ""
+
+#: src/Api/RestApi.php:179
+msgid "Unsupported provider for connection testing."
+msgstr ""
+
+#. translators: %d: Number of deleted cache entries.
+#: src/Api/RestApi.php:202
+#, php-format
+msgid "Cleared %d cached audio provider entries."
+msgstr ""
+
+#: src/Core/Cache.php:66
+msgid "MDS Audio Providers Cache"
+msgstr ""
+
+#: src/Core/Cache.php:67
+msgid "Companion"
+msgstr ""
+
+#: src/Core/Cache.php:71
+msgid "Disabled (manage separately in Audio Providers)"
+msgstr ""
+
+#: src/Core/Cache.php:72
+msgid "Purge Audio Provider Transients on Cache Flush"
+msgstr ""
+
+#: src/Providers/AppleMusicProvider.php:49
+msgid "Apple Music"
+msgstr ""
+
+#: src/Providers/BandcampProvider.php:342
+msgid "Only HTTPS URLs are allowed."
+msgstr ""
+
+#: src/Providers/BandcampProvider.php:348
+msgid "Only bandcamp.com URLs are allowed."
+msgstr ""
+
+#. translators: %d: HTTP status code.
+#: src/Providers/BandcampProvider.php:375
+#, php-format
+msgid "Bandcamp returned HTTP %d."
+msgstr ""
+
+#: src/Providers/DeezerProvider.php:49
+msgid "Deezer"
+msgstr ""
+
+#: src/Providers/SoundCloudProvider.php:195
+msgid "Connected to SoundCloud OAuth 2.1 API."
+msgstr ""
+
+#: src/Providers/SoundCloudProvider.php:200
+msgid "SoundCloud authentication failed. Verify Client ID and Client Secret."
+msgstr ""
+
+#: src/Providers/SpotifyProvider.php:58
+msgid "Spotify"
+msgstr ""
+
+#: src/Providers/SpotifyProvider.php:193
+msgid "Connected to Spotify Web API."
+msgstr ""
+
+#: src/Providers/SpotifyProvider.php:198
+msgid "Spotify authentication failed. Verify Client ID and Client Secret."
+msgstr ""
+
+#: js/admin-settings.js:37
+msgid "Plays the Release Audio Preview URL (.mp3/.m4a) configured directly on each Release."
+msgstr ""
+
+#: js/admin-settings.js:38
+msgid "Resolves native 30-second .m4a previews automatically by Release UPC/EAN via the public iTunes Lookup API. Zero API keys required."
+msgstr ""
+
+#: js/admin-settings.js:39
+msgid "Resolves native 30-second .mp3 previews automatically by Release UPC/EAN via Deezer’s public API. Zero API keys required."
+msgstr ""
+
+#: js/admin-settings.js:40
+msgid "Resolves Bandcamp album tracks Just-in-Time from each release’s verified Bandcamp Album ID, with automatic EmbeddedPlayer fallback."
+msgstr ""
+
+#: js/admin-settings.js:41
+msgid "Resolves official 30-second previews (/preview) and streams for releases with a SoundCloud URL. Requires SoundCloud OAuth 2.1 credentials."
+msgstr ""
+
+#: js/admin-settings.js:42
+msgid "Looks up releases by UPC/EAN via Spotify Web API. Plays native 30s preview_url when available (Extended Quota Mode), and falls through cleanly otherwise."
+msgstr ""
+
+#: js/admin-settings.js:58
+msgid "Audio Providers UI encountered an error: "
+msgstr ""
+
+#: js/admin-settings.js:158
+msgid "Failed to save settings."
+msgstr ""
+
+#: js/admin-settings.js:172
+msgid "Connection succeeded."
+msgstr ""
+
+#: js/admin-settings.js:172
+msgid "Connection failed."
+msgstr ""
+
+#: js/admin-settings.js:174
+msgid "Connection test failed."
+msgstr ""
+
+#: js/admin-settings.js:190
+msgid "Cache cleared."
+msgstr ""
+
+#: js/admin-settings.js:192
+msgid "Failed to clear cache."
+msgstr ""
+
+#: js/admin-settings.js:200
+msgid "Disabled"
+msgstr ""
+
+#: js/admin-settings.js:205
+msgid "Configured"
+msgstr ""
+
+#: js/admin-settings.js:206
+msgid "Needs API Key"
+msgstr ""
+
+#: js/admin-settings.js:208
+msgid "Zero-Auth"
+msgstr ""
+
+#: js/admin-settings.js:230
+msgid "Active Key: "
+msgstr ""
+
+#: js/admin-settings.js:233
+msgid "SoundCloud Client ID"
+msgstr ""
+
+#: js/admin-settings.js:233
+msgid "Spotify Client ID"
+msgstr ""
+
+#: js/admin-settings.js:235
+#: js/admin-settings.js:244
+msgid "Leave blank to keep existing"
+msgstr ""
+
+#: js/admin-settings.js:241
+msgid "SoundCloud Client Secret"
+msgstr ""
+
+#: js/admin-settings.js:241
+msgid "Spotify Client Secret"
+msgstr ""
+
+#: js/admin-settings.js:260
+msgid "Test SoundCloud Connection"
+msgstr ""
+
+#: js/admin-settings.js:260
+msgid "Test Spotify Connection"
+msgstr ""
+
+#: js/admin-settings.js:275
+msgid "MDS Release Manager (1.2.0+) with the Unified Audio API is required."
+msgstr ""
+
+#: js/admin-settings.js:279
+msgid "Provider Priority & API Credentials"
+msgstr ""
+
+#: js/admin-settings.js:281
+msgid "About Unified Audio Providers"
+msgstr ""
+
+#: js/admin-settings.js:282
+msgid "Providers are tried top-to-bottom until one returns a playable preview. Apple Music, Deezer, and Spotify resolve automatically by Release UPC/EAN. Click Customize on SoundCloud or Spotify to configure API keys and test connections."
+msgstr ""
+
+#: js/admin-settings.js:283
+msgid "Powers the Unified Release Player block, [release-player] shortcode, and Release Links audio slot."
+msgstr ""
+
+#: js/admin-settings.js:312
+msgid "Enable provider"
+msgstr ""
+
+#: js/admin-settings.js:332
+msgid "Save Audio Provider Settings"
+msgstr ""
+
+#: js/admin-settings.js:341
+msgid "Provider Transient Cache"
+msgstr ""
+
+#: js/admin-settings.js:343
+msgid "About Audio Provider Caching"
+msgstr ""
+
+#: js/admin-settings.js:344
+msgid "Provider manifests are cached selectively in WordPress transients respecting each service’s stream TTL (15–30 minutes for signed streams; 12 hours for UPC lookups). Clearing this cache also notifies MDS Release Manager’s Cache Manager."
+msgstr ""
+
+#: js/admin-settings.js:349
+msgid "Active cached provider lookups: "
+msgstr ""
+
+#: js/admin-settings.js:364
+msgid "Clear Audio Provider Cache"
+msgstr ""
+
+#: js/admin-settings.js:374
+msgid "Providers & API Keys"
+msgstr ""
+
+#: js/admin-settings.js:375
+msgid "Cache & Diagnostics"
+msgstr ""

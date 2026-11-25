@@ -117,13 +117,18 @@ final class SoundCloudProvider implements AudioProviderInterface {
 		$kind       = (string) ( $resolved['kind'] ?? '' );
 		$raw_tracks = array();
 		if ( 'playlist' === $kind && isset( $resolved['tracks'] ) && is_array( $resolved['tracks'] ) ) {
-			$raw_tracks = array_slice( $resolved['tracks'], 0, 20 );
+			// Cap synchronous playlist resolution to avoid PHP max_execution_time timeouts on cold caches.
+			$raw_tracks = array_slice( $resolved['tracks'], 0, 8 );
 		} elseif ( 'track' === $kind ) {
 			$raw_tracks = array( $resolved );
 		}
 
-		$tracks = array();
+		$tracks   = array();
+		$deadline = microtime( true ) + 6.0;
 		foreach ( $raw_tracks as $idx => $item ) {
+			if ( ! empty( $tracks ) && microtime( true ) >= $deadline ) {
+				break;
+			}
 			if ( ! is_array( $item ) ) {
 				continue;
 			}

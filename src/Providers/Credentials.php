@@ -175,10 +175,10 @@ final class Credentials {
 	}
 
 	/**
-	 * Encrypts a secret string using OpenSSL AES-256-CBC when available.
+	 * Encrypts a secret string using authenticated OpenSSL AES-256-GCM (or AES-256-CBC + HMAC-SHA256).
 	 *
 	 * @param string $plain Plaintext secret.
-	 * @return string Encoded ciphertext or prefixed base64 fallback.
+	 * @return string Authenticated ciphertext, or prefixed base64 fallback only when OpenSSL is unavailable.
 	 */
 	private static function encrypt( string $plain ): string {
 		if ( '' === $plain ) {
@@ -186,11 +186,21 @@ final class Credentials {
 		}
 		if ( function_exists( 'openssl_encrypt' ) && function_exists( 'random_bytes' ) ) {
 			$key = hash( 'sha256', self::key_material(), true );
-			$iv  = random_bytes( 16 );
-			$enc = openssl_encrypt( $plain, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv );
-			if ( is_string( $enc ) ) {
-				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Encoding binary AES-256-CBC ciphertext.
-				return 'enc:' . base64_encode( $iv . $enc );
+			$iv  = random_bytes( 12 );
+			$tag = '';
+			$enc = openssl_encrypt( $plain, 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag, '', 16 );
+			if ( is_string( $enc ) && 16 === strlen( $tag ) ) {
+				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Encoding binary AES-256-GCM ciphertext.
+				return 'gcm:' . base64_encode( $iv . $tag . $enc );
+			}
+
+			// Fallback to AES-256-CBC + HMAC-SHA256 if GCM is unsupported by the OpenSSL build.
+			$cbc_iv  = random_bytes( 16 );
+			$cbc_enc = openssl_encrypt( $plain, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $cbc_iv );
+			if ( is_string( $cbc_enc ) ) {
+				$mac = hash_hmac( 'sha256', $cbc_iv . $cbc_enc, $key, true );
+				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Encoding binary AES-256-CBC+HMAC ciphertext.
+				return 'hmac:' . base64_encode( $mac . $cbc_iv . $cbc_enc );
 			}
 		}
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Fallback encoding when OpenSSL is unavailable.
@@ -198,14 +208,46 @@ final class Credentials {
 	}
 
 	/**
-	 * Decrypts a stored secret string.
+	 * Decrypts a stored secret string (supports `gcm:`, `hmac:`, legacy `enc:`, and `b64:`).
 	 *
 	 * @param string $stored Stored value.
 	 * @return string Plaintext secret.
 	 */
 	private static function decrypt( string $stored ): string {
+		if ( str_starts_with( $stored, 'gcm:' ) && function_exists( 'openssl_decrypt' ) ) {
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding binary AES-256-GCM ciphertext.
+			$raw = base64_decode( substr( $stored, 4 ), true );
+			if ( is_string( $raw ) && strlen( $raw ) > 28 ) {
+				$key = hash( 'sha256', self::key_material(), true );
+				$iv  = substr( $raw, 0, 12 );
+				$tag = substr( $raw, 12, 16 );
+				$dec = openssl_decrypt( substr( $raw, 28 ), 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag );
+				if ( is_string( $dec ) ) {
+					return $dec;
+				}
+			}
+			return '';
+		}
+		if ( str_starts_with( $stored, 'hmac:' ) && function_exists( 'openssl_decrypt' ) ) {
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding binary AES-256-CBC+HMAC ciphertext.
+			$raw = base64_decode( substr( $stored, 5 ), true );
+			if ( is_string( $raw ) && strlen( $raw ) > 48 ) {
+				$key      = hash( 'sha256', self::key_material(), true );
+				$mac      = substr( $raw, 0, 32 );
+				$payload  = substr( $raw, 32 );
+				$expected = hash_hmac( 'sha256', $payload, $key, true );
+				if ( hash_equals( $expected, $mac ) ) {
+					$iv  = substr( $payload, 0, 16 );
+					$dec = openssl_decrypt( substr( $payload, 16 ), 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv );
+					if ( is_string( $dec ) ) {
+						return $dec;
+					}
+				}
+			}
+			return '';
+		}
 		if ( str_starts_with( $stored, 'enc:' ) && function_exists( 'openssl_decrypt' ) ) {
-			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding binary AES-256-CBC ciphertext.
+			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding legacy AES-256-CBC ciphertext.
 			$raw = base64_decode( substr( $stored, 4 ), true );
 			if ( is_string( $raw ) && strlen( $raw ) > 16 ) {
 				$key = hash( 'sha256', self::key_material(), true );

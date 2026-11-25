@@ -89,6 +89,10 @@ final class Admin {
 			return;
 		}
 
+		if ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) && ! \MDS\ReleaseManager\Api\ExtensionApi::is_hub() ) {
+			return;
+		}
+
 		add_meta_box(
 			'mds_ap_release_providers',
 			__( 'Audio Providers (Bandcamp & SoundCloud)', 'mds-audio-providers' ),
@@ -112,51 +116,58 @@ final class Admin {
 
 		wp_nonce_field( 'mds_ap_save_release', 'mds_ap_nonce' );
 		?>
-		<p class="description">
-			<?php esc_html_e( 'Apple Music, Deezer, and Spotify resolve automatically from the Release UPC/EAN. Use the fields below for Bandcamp and SoundCloud.', 'mds-audio-providers' ); ?>
-		</p>
-		<table class="form-table" role="presentation">
-			<tr>
-				<th scope="row">
-					<label for="mds_bc_url"><?php esc_html_e( 'Bandcamp Release URL', 'mds-audio-providers' ); ?></label>
-				</th>
-				<td>
-					<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-						<input
-							type="url"
-							id="mds_bc_url"
-							name="mds_bc_url"
-							value="<?php echo esc_attr( $bc_url ); ?>"
-							class="regular-text"
-							placeholder="https://artist.bandcamp.com/album/release-name"
-						/>
-						<button type="button" id="mds_bc_verify_btn" class="button button-secondary">
-							<?php esc_html_e( 'Verify URL', 'mds-audio-providers' ); ?>
-						</button>
+		<div class="mds-editor-box">
+			<div class="mds-section-info" role="note">
+				<span class="dashicons dashicons-info-outline mds-section-info__icon" aria-hidden="true"></span>
+				<div class="mds-section-info__body">
+					<strong class="mds-section-info__title"><?php esc_html_e( 'Automatic & Provider-Specific Audio Sources', 'mds-audio-providers' ); ?></strong>
+					<p class="mds-section-info__summary">
+						<?php esc_html_e( 'Apple Music, Deezer, and Spotify resolve automatically from this Release’s Barcode (UPC/EAN). Configure Bandcamp or SoundCloud below to enable those providers for this release.', 'mds-audio-providers' ); ?>
+					</p>
+				</div>
+			</div>
+
+			<div class="mds-control-group">
+				<h4 class="mds-control-group__title"><?php esc_html_e( 'Bandcamp', 'mds-audio-providers' ); ?></h4>
+				<div class="mds-style-grid-2col">
+					<div class="mds-style-field">
+						<label class="mds-style-field__label" for="mds_bc_url"><?php esc_html_e( 'Bandcamp Release URL', 'mds-audio-providers' ); ?></label>
+						<div class="mds-buy-now-actions">
+							<input
+								type="url"
+								id="mds_bc_url"
+								name="mds_bc_url"
+								value="<?php echo esc_attr( $bc_url ); ?>"
+								class="regular-text"
+								placeholder="https://artist.bandcamp.com/album/release-name"
+							/>
+							<button type="button" id="mds_bc_verify_btn" class="button button-secondary">
+								<?php esc_html_e( 'Verify URL', 'mds-audio-providers' ); ?>
+							</button>
+						</div>
+						<p id="mds_bc_status" class="mds-style-field__help" aria-live="polite"></p>
 					</div>
-					<p id="mds_bc_status" class="description" aria-live="polite"></p>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row">
-					<label for="mds_bc_album_id"><?php esc_html_e( 'Bandcamp Album ID', 'mds-audio-providers' ); ?></label>
-				</th>
-				<td>
-					<input
-						type="number"
-						id="mds_bc_album_id"
-						name="mds_bc_album_id"
-						value="<?php echo $bc_album_id > 0 ? esc_attr( (string) $bc_album_id ) : ''; ?>"
-						class="regular-text"
-						readonly
-					/>
-				</td>
-			</tr>
-			<tr>
-				<th scope="row">
-					<label for="mds_ap_soundcloud_url"><?php esc_html_e( 'SoundCloud Track / Playlist URL', 'mds-audio-providers' ); ?></label>
-				</th>
-				<td>
+					<div class="mds-style-field">
+						<label class="mds-style-field__label" for="mds_bc_album_id"><?php esc_html_e( 'Bandcamp Album ID', 'mds-audio-providers' ); ?></label>
+						<input
+							type="number"
+							id="mds_bc_album_id"
+							name="mds_bc_album_id"
+							value="<?php echo $bc_album_id > 0 ? esc_attr( (string) $bc_album_id ) : ''; ?>"
+							class="regular-text"
+							readonly
+						/>
+						<p class="mds-style-field__help">
+							<?php esc_html_e( 'Populated automatically when you verify a Bandcamp album URL.', 'mds-audio-providers' ); ?>
+						</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="mds-control-group">
+				<h4 class="mds-control-group__title"><?php esc_html_e( 'SoundCloud', 'mds-audio-providers' ); ?></h4>
+				<div class="mds-style-field">
+					<label class="mds-style-field__label" for="mds_ap_soundcloud_url"><?php esc_html_e( 'SoundCloud Track / Playlist URL', 'mds-audio-providers' ); ?></label>
 					<input
 						type="url"
 						id="mds_ap_soundcloud_url"
@@ -165,12 +176,12 @@ final class Admin {
 						class="regular-text"
 						placeholder="https://soundcloud.com/artist/track-or-set"
 					/>
-					<p class="description">
-						<?php esc_html_e( 'Optional. Requires SoundCloud API credentials in Audio Providers settings.', 'mds-audio-providers' ); ?>
+					<p class="mds-style-field__help">
+						<?php esc_html_e( 'Optional. Requires SoundCloud API credentials under Releases → Settings → Audio Providers.', 'mds-audio-providers' ); ?>
 					</p>
-				</td>
-			</tr>
-		</table>
+				</div>
+			</div>
+		</div>
 		<?php
 	}
 
@@ -187,6 +198,9 @@ final class Admin {
 			return;
 		}
 		if ( ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['mds_ap_nonce'] ) ), 'mds_ap_save_release' ) ) {
+			return;
+		}
+		if ( ! current_user_can( 'edit_post', $post_id ) ) {
 			return;
 		}
 
@@ -236,13 +250,15 @@ final class Admin {
 			return;
 		}
 
+		$script_rel = 'js/metabox-verify.js';
 		wp_enqueue_script(
 			'mds-bc-metabox',
-			MDS_AP_URL . 'js/metabox-verify.js',
+			MDS_AP_URL . $script_rel,
 			array( 'jquery', 'wp-a11y' ),
-			MDS_AP_VERSION,
+			file_exists( MDS_AP_PATH . $script_rel ) ? (string) filemtime( MDS_AP_PATH . $script_rel ) : MDS_AP_VERSION,
 			true
 		);
+		wp_set_script_translations( 'mds-bc-metabox', 'mds-audio-providers' );
 
 		wp_add_inline_script(
 			'mds-bc-metabox',
