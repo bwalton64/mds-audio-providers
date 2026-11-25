@@ -6,6 +6,7 @@
  * Requires at least: 7.0
  * Requires PHP: 8.0
  * Requires Plugins: mds-release-manager
+ * Update URI: https://github.com/bwalton64/mds-audio-providers
  * Text Domain: mds-audio-providers
  * Author: Musty Dungeon Studios
  *
@@ -68,3 +69,26 @@ if ( class_exists( \MDS\AudioProviders\Providers\ProviderRegistry::class ) ) {
 	\MDS\AudioProviders\Admin\AdminInterface::register_hooks();
 	\MDS\AudioProviders\Api\RestApi::register_hooks();
 }
+
+add_action(
+	'mds_rm_loaded',
+	static function (): void {
+		if ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) ) {
+			\MDS\ReleaseManager\Api\ExtensionApi::register_github_updater(
+				array(
+					'basename'       => MDS_AP_BASENAME,
+					'slug'           => 'mds-audio-providers',
+					'repo'           => 'bwalton64/mds-audio-providers',
+					'version'        => MDS_AP_VERSION,
+					'name'           => 'MDS Audio Providers',
+					'author'         => 'Musty Dungeon Studios',
+					'homepage'       => 'https://mustydungeon.com',
+					'token_constant' => 'MDS_AP_GITHUB_TOKEN',
+					'requires'       => '7.0',
+					'tested'         => '7.0',
+					'requires_php'   => '8.0',
+				)
+			);
+		}
+	}
+);
