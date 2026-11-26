@@ -2,6 +2,17 @@
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-26
+
+### Added
+- Added `ProviderOptions` (`mds_ap_provider_options`) and per-provider **Allow iframe embed fallback** toggles in **Releases → Settings → Audio Providers** for **Spotify** and **Bandcamp**, plus official Spotify iframe embed fallback (`open.spotify.com/embed/{type}/{id}`) when `preview_url` is unavailable or a Release `spotify_url` is present without OAuth keys.
+- Added 7 new streaming providers to `ProviderRegistry` (12 providers total): **Audius** (zero-auth 320kbps native HTML5 streams), **Mixcloud** (zero-auth oEmbed/widget iframe), **Audiomack** (zero-auth official iframe embed), **TIDAL** (OAuth 2.0 Open API v2 UPC lookup + TIDAL URL embed + live connection test), **Jamendo** (free `client_id` API v3.0 native `.mp3` streams + live connection test), **Funkwhale** (self-hosted/Fediverse pod native HTML5 streams + optional Bearer token + live pod test), and **Musicfetch** (optional commercial BYO `x-token` UPC resolver with `Retry-After` handling + live connection test).
+- Extended `Credentials` with AES-256-GCM encrypted secret-only storage (`MDS_AP_MUSICFETCH_API_KEY`), single-key storage (`MDS_AP_JAMENDO_CLIENT_ID`), and `wp-config.php` overrides for TIDAL and Funkwhale (`MDS_AP_TIDAL_CLIENT_ID/SECRET`, `MDS_AP_FUNKWHALE_POD_URL/TOKEN`).
+- Made Release **Audio Providers** metabox fields conditional on each provider's enabled state (`Admin::is_provider_enabled()`), added automatic fallback detection from Core Release Links meta keys, updated `wpml-config.xml` and `uninstall.php`, and expanded `tests/providers.php` to cover all 12 providers.
+
+### Fixed
+- Guarded GitHub updater registration in `mds-audio-providers.php` when `.git/` is present so WordPress auto-updates never overwrite a local Git development checkout.
+
 ## [2.0.3] - 2026-11-25
 
 ### Fixed

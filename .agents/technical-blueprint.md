@@ -1,125 +1,155 @@
-# Technical Blueprint — MDS Bandcamp Integration
+# Technical Blueprint — MDS Audio Providers
 
 ## Architecture Overview
 
-- **Plugin Slug / Text Domain:** `mds-bandcamp-integration`
-- **PHP Root Namespace:** `MDS\Bandcamp\` (Composer PSR-4 autoloaded from `src/` via `vendor/autoload.php`)
-- **Prefixes:** `MDS_BC_` (constants), `mds_bc_` (AJAX/admin-post actions, nonces, ephemeral transients), `mds-bc-` (script/style handles)
+- **Plugin Name:** `MDS Audio Providers`
+- **Plugin Slug / Text Domain:** `mds-audio-providers`
+- **Version:** `2.1.0`
+- **PHP Root Namespace:** `MDS\AudioProviders\` (Composer PSR-4 autoloaded from `src/` via `vendor/autoload.php`)
+- **Prefixes:** `MDS_AP_` (constants; legacy `MDS_BC_VERSION`, `MDS_BC_PATH`, `MDS_BC_URL` aliases preserved), `mds_ap_` (options, transients, nonces, meta), `mds-ap-` (admin script/style handles; `mds-bc-metabox` and `mds_bc_verify_url` retained for metabox compatibility)
 - **Compatibility:** WordPress `7.0+` (`Tested up to: 7.x`), PHP `8.0+`
-- **Build System:** Composer (`composer.json` + `phpcs.xml.dist` with WPCS 3.x and PHPCompatibilityWP). Frontend assets (`blocks/*/index.js`, `js/*.js`, `css/*.css`) are currently authored directly without an npm/webpack build step.
-- **Optional Dependency:** **MDS Release Manager** (`MDS\Bandcamp\Core\Dependencies::is_mds_active()`). Standalone blocks, `[bandcamp]` shortcode, caching, and Settings API work without it; Release/Artist meta boxes, Audio Player Manager registration, and preloaded editor catalogs activate when MDS Release Manager is present.
+- **Required Dependency:** **MDS Release Manager** (`Requires Plugins: mds-release-manager`), specifically its Unified Audio API (`MDS\ReleaseManager\Core\Audio\AudioProviderInterface` and `mds_rm_audio_providers`). When MDS Release Manager is inactive, a standalone **Settings → Audio Providers** fallback screen remains accessible with a dependency warning.
+- **GitHub Auto-Updater:** Registers `bwalton64/mds-audio-providers` via `MDS\ReleaseManager\Api\ExtensionApi::register_github_updater()` on `mds_rm_loaded` (guarded by `! is_dir( MDS_AP_PATH . '.git' )` so WordPress auto-updates never overwrite a local Git development checkout; optional `MDS_AP_GITHUB_TOKEN` constant).
+- **Build System:** Composer (`composer.json` + `phpcs.xml.dist` with WPCS 3.x and PHPCompatibilityWP). Admin JavaScript (`js/admin-settings.js`, `js/metabox-verify.js`) and CSS (`css/admin.css`) are authored directly without an npm/webpack build step.
+
+## Architecture Diagram
+
+```mermaid
+flowchart TD
+    Boot["mds-audio-providers.php"] --> Reg["Providers\\ProviderRegistry (12 providers)"]
+    Boot --> Cache["Core\\Cache"]
+    Boot --> Admin["Admin\\Admin"]
+    Boot --> AdminUI["Admin\\AdminInterface"]
+    Boot --> Rest["Api\\RestApi"]
+    Boot --> Updater["ExtensionApi::register_github_updater() (skipped if .git)"]
+
+    Reg -->|"mds_rm_audio_providers"| CoreAudio["MDS Release Manager Unified Audio API"]
+    Reg --> Native["Native HTML5 Stream Providers\nApple Music (20), Deezer (30), Bandcamp (40),\nAudius (45), SoundCloud (50), Jamendo (55),\nFunkwhale (58), Spotify (60), Musicfetch (80)"]
+    Reg --> Embed["Official Embed / Fallback Providers\nBandcamp EmbeddedPlayer, Spotify Embed,\nTIDAL (65), Mixcloud (70), Audiomack (75)"]
+
+    Native --> Creds["Providers\\Credentials (AES-256-GCM / wp-config)"]
+    Native --> Opts["Providers\\ProviderOptions (embed_fallback)"]
+    Embed --> Opts
+    Native --> Cache
+    Embed --> Cache
+    Cache -->|"mds_rm_cache_adapters"| CoreCache["MDS Release Manager Cache Manager"]
+
+    Admin -->|"Conditional Release metabox + Buy Now"| MetaboxJS["js/metabox-verify.js"]
+    AdminUI -->|"Releases -> Settings -> Audio Providers"| SettingsJS["js/admin-settings.js"]
+    SettingsJS -->|"mds-ap/v1/*"| Rest
+    Rest --> Creds
+    Rest --> Opts
+    Rest --> Cache
+```
 
 ## Directory Structure
 
 ```text
-mds-bandcamp-integration/
-├── composer.json                          # PSR-4 autoloading ("MDS\\Bandcamp\\": "src/") + WPCS/PHPCompatibilityWP
-├── phpcs.xml.dist                         # WPCS + PHPCompatibilityWP ruleset (mds_bc_ / MDS_BC_ / MDS\Bandcamp)
-├── mds-bandcamp-integration.php           # Plugin header, MDS_BC_* constants, vendor/autoload.php, ::register_hooks() bootstrap
+mds-audio-providers/
+├── .agents/
+│   ├── research/streaming-providers-feasibility.md  # Ecosystem feasibility study & phased roadmap
+│   ├── rules/project-config.md                      # Plugin variables, prefixes, namespace, LocalWP paths
+│   └── technical-blueprint.md                       # This architecture reference
+├── .github/
+│   └── workflows/release.yml                        # Tag-driven ZIP build, SHA-256 checksum, GitHub Release
+├── css/
+│   └── admin.css                                    # Admin settings styles
+├── js/
+│   ├── admin-settings.js                            # WP 7.x React Admin UI (12 providers, toggles, creds, cache)
+│   └── metabox-verify.js                            # Bandcamp verifier, embed-snippet parser, Buy Now bridge
+├── languages/
+│   └── mds-audio-providers.pot                      # Translation catalog template
 ├── src/
 │   ├── Admin/
-│   │   ├── Admin.php                      # MDS\Bandcamp\Admin\Admin — Release & Artist meta boxes, AJAX URL verifier
-│   │   └── AdminInterface.php             # MDS\Bandcamp\Admin\AdminInterface — Settings API page + MDS RM settings tab
+│   │   ├── Admin.php                                # Conditional Release metabox, Buy Now button, AJAX verifier
+│   │   └── AdminInterface.php                       # Releases -> Settings -> Audio Providers tab & standalone fallback
 │   ├── Api/
-│   │   ├── BandcampApi.php                # MDS\Bandcamp\Api\BandcampApi — HTTPS Bandcamp fetcher & HTML/JSON parser
-│   │   └── RestApi.php                    # MDS\Bandcamp\Api\RestApi — GET /mds-bandcamp/v1/releases + catalog enrichment
-│   ├── Blocks/
-│   │   ├── BlockDefaults.php              # MDS\Bandcamp\Blocks\BlockDefaults — Site-wide defaults (mds_bc_block_defaults) & render_block_data resolution
-│   │   ├── BlockRenderer.php              # MDS\Bandcamp\Blocks\BlockRenderer — Shared Album, Discography & Miniplayer renderer
-│   │   └── Blocks.php                     # MDS\Bandcamp\Blocks\Blocks — Block registration (3 blocks) & category
+│   │   └── RestApi.php                              # mds-ap/v1 REST endpoints (/settings, /test-connection, /clear-cache)
 │   ├── Core/
-│   │   ├── Cache.php                      # MDS\Bandcamp\Core\Cache — Transient inspection, clearing, and cache duration
-│   │   ├── Dependencies.php               # MDS\Bandcamp\Core\Dependencies — MDS Release Manager availability checks
-│   │   ├── Helpers.php                    # MDS\Bandcamp\Core\Helpers — Release/Artist meta accessors, context resolution
-│   │   ├── Logging.php                    # MDS\Bandcamp\Core\Logging — WP_DEBUG / WP_DEBUG_LOG wrapper
-│   │   ├── Templates.php                  # MDS\Bandcamp\Core\Templates — Theme-overridable & admin template loader
-│   │   └── Utilities.php                  # MDS\Bandcamp\Core\Utilities — [bandcamp] shortcode, kses rules, contrast helper
-│   ├── Frontend/
-│   │   ├── Assets.php                     # MDS\Bandcamp\Frontend\Assets — Admin React UI, editor defaults, and frontend CSS/JS enqueueing
-│   │   ├── Frontend.php                   # MDS\Bandcamp\Frontend\Frontend — Audio Player Manager & Release Links filter
-│   │   └── Shortcodes.php                 # MDS\Bandcamp\Frontend\Shortcodes — [bandcamp-album], [bandcamp-discography], [bandcamp-miniplayer]
-│   └── Integrations/
-│       └── Elementor/
-│           ├── AlbumWidget.php            # Elementor Bandcamp Album widget (dashicons-album)
-│           ├── DiscographyWidget.php      # Elementor Bandcamp Discography widget (dashicons-album)
-│           ├── Elementor.php              # Elementor widget registration hook
-│           └── MiniplayerWidget.php       # Elementor Bandcamp Miniplayer widget (dashicons-album)
-├── blocks/                                # Three Gutenberg blocks (bandcamp-album, bandcamp-discography, bandcamp-miniplayer)
-├── css/                                   # admin.css, blocks.css, public.css
-├── js/                                    # blocks.js (lightbox), metabox-verify.js, release-picker.js
-├── templates/
-│   ├── frontend-widget.php                # Theme-overridable Bandcamp player wrapper
-│   └── admin/admin-settings.php           # Plugin-owned Release/Artist meta-box view
-└── tests/                                 # Standalone PHP test suites (no WP core required)
+│   │   ├── Cache.php                                # Selective transient cache, key index, Release Manager cache adapter
+│   │   ├── Dependencies.php                         # Checks for MDS Release Manager and AudioProviderInterface
+│   │   └── Logging.php                              # WP_DEBUG / WP_DEBUG_LOG structured error_log() wrapper
+│   └── Providers/
+│       ├── AppleMusicProvider.php                   # Priority 20 — Zero-auth iTunes UPC lookup (30s .m4a, 12h TTL)
+│       ├── AudiomackProvider.php                    # Priority 75 — Zero-auth Audiomack official iframe embed (12h TTL)
+│       ├── AudiusProvider.php                       # Priority 45 — Zero-auth Audius Open Audio 320kbps stream (1h TTL)
+│       ├── BandcampProvider.php                     # Priority 40 — JIT stream + optional EmbeddedPlayer fallback (30m TTL)
+│       ├── Credentials.php                          # wp-config.php overrides + AES-256-GCM / CBC+HMAC encrypted options
+│       ├── DeezerProvider.php                       # Priority 30 — Zero-auth Deezer UPC lookup (30s .mp3, 12h TTL)
+│       ├── FunkwhaleProvider.php                    # Priority 58 — Self-hosted / Fediverse pod REST streams (1h TTL)
+│       ├── JamendoProvider.php                      # Priority 55 — Free client_id API v3.0 direct .mp3 streams (12h TTL)
+│       ├── MixcloudProvider.php                     # Priority 70 — Zero-auth oEmbed + official iframe widget (12h TTL)
+│       ├── MusicfetchProvider.php                   # Priority 80 — Optional paid BYO x-token UPC resolver (12h TTL)
+│       ├── ProviderOptions.php                      # Per-provider boolean toggles (embed_fallback for Bandcamp/Spotify)
+│       ├── ProviderRegistry.php                     # Registers all 12 AudioProviderInterface implementations
+│       ├── SoundCloudProvider.php                   # Priority 50 — OAuth 2.1 /resolve, /preview, /streams (15m TTL)
+│       ├── SpotifyProvider.php                      # Priority 60 — OAuth 2.0 UPC preview_url + optional embed fallback (12h TTL)
+│       └── TidalProvider.php                        # Priority 65 — OAuth 2.0 v2 UPC lookup or TIDAL URL -> embed.tidal.com (12h TTL)
+├── tests/
+│   └── providers.php                                # Standalone PHP unit tests covering all 12 providers
+├── composer.json                                    # PSR-4 autoloading ("MDS\\AudioProviders\\": "src/") + WPCS/PHPCompatibilityWP
+├── mds-audio-providers.php                          # Plugin header, constants, autoloader, hook bootstrap, .git updater guard
+├── phpcs.xml.dist                                   # WPCS + PHPCompatibilityWP ruleset (WP 7.0+, PHP 8.0+)
+├── README.md                                        # Developer & repository documentation
+├── readme.txt                                       # WordPress.org plugin directory metadata & changelog
+├── uninstall.php                                    # Single-site and multisite option/transient cleanup
+├── USER-MANUAL.md                                   # End-user and site-admin manual
+├── wpml-config.xml                                  # WPML copy rules for Release audio provider custom fields
+└── changelog.md                                     # Append-only Keep a Changelog history
 ```
 
-## Data Storage Contracts (Backwards-Compatible)
+## Data Storage & Configuration Contracts
 
 ### WordPress Options
 
-| Option Key | Purpose |
-| :--- | :--- |
-| `mds_bandcamp__settings` | Plugin settings array (`transient` cache TTL in minutes, 1–1440, default 60). Preserved for backwards compatibility. |
-| `mds_bandcamp_migration_complete` | Flag set after legacy `bandcamp_shortcode` post-meta migration finishes. |
-| `mds_bandcamp_audio_player_activated` | One-time migration flag for activating the Bandcamp Audio Player in MDS Release Manager. |
-| `mds_bandcamp_block_migration_cursor` | Batch cursor (100 posts/batch) while migrating `blocks-for-bandcamp/*` blocks; deleted on completion. |
-| `mds_bandcamp_block_namespace_migrated` | Flag set when legacy block namespace migration completes. |
-
-### Post Meta
-
-| Post Type | Meta Key | Value |
+| Option Key | Owner | Purpose |
 | :--- | :--- | :--- |
-| `release` | `mds_bandcamp_integration` | Associative array: `url`, `album_id`, `saved_at`. |
-| `release` | `bandcamp_album_id` | Flat string album ID (registered via `MDS_RM_Release_Meta::register_extension_meta`). |
-| `release` | `bandcamp_album_url` | Flat string album URL (registered via `MDS_RM_Release_Meta::register_extension_meta`). |
-| `artist` | `mds_bandcamp_artist_integration` | Associative array: `url` (`https://<subdomain>.bandcamp.com`), `subdomain`, `saved_at`. |
-| `artist` | `bandcamp_artist_url` | Flat canonical artist Bandcamp URL. |
-| `artist` | `bandcamp_artist_subdomain` | Flat normalized Bandcamp artist subdomain. |
+| `mds_ap_credentials` | `MDS Audio Providers` | Encrypted provider credentials (`soundcloud`, `spotify`, `tidal`, `jamendo`, `funkwhale`, `musicfetch`; non-autoloaded). |
+| `mds_ap_provider_options` | `MDS Audio Providers` | Per-provider boolean feature toggles (`bandcamp.embed_fallback`, `spotify.embed_fallback`; non-autoloaded). |
+| `mds_ap_cached_keys` | `MDS Audio Providers` | Bounded (max 250) index of active `mds_ap_*` transients for diagnostics and Redis/Memcached-safe clearing. |
+| `mds_rm_audio_provider_priority` | `MDS Release Manager` | Ordered array of provider slugs updated via `POST /mds-ap/v1/settings`. |
+| `mds_rm_audio_disabled_providers` | `MDS Release Manager` | Disabled provider slugs updated via `POST /mds-ap/v1/settings` and read by `Admin::is_provider_enabled()`. |
 
-### Transients
+### `wp-config.php` Constants (Optional Overrides)
 
-- Cached Bandcamp API responses are stored with the `mds_bandcamp__` transient prefix for `transient` minutes (default `60`).
-- Admin notices use `mds_bc_clear_cache_notice` and `mds_bc_standalone_plugin_deactivated`.
-- Clearing cache purges both `mds_bc_` and legacy `mds_bandcamp` transients.
+| Constant(s) | Provider / Feature |
+| :--- | :--- |
+| `MDS_AP_SOUNDCLOUD_CLIENT_ID`, `MDS_AP_SOUNDCLOUD_CLIENT_SECRET` | SoundCloud OAuth 2.1 |
+| `MDS_AP_SPOTIFY_CLIENT_ID`, `MDS_AP_SPOTIFY_CLIENT_SECRET` | Spotify OAuth 2.0 |
+| `MDS_AP_TIDAL_CLIENT_ID`, `MDS_AP_TIDAL_CLIENT_SECRET` | TIDAL Open API v2 OAuth 2.0 |
+| `MDS_AP_JAMENDO_CLIENT_ID` | Jamendo API v3.0 |
+| `MDS_AP_FUNKWHALE_POD_URL`, `MDS_AP_FUNKWHALE_TOKEN` | Funkwhale Pod URL & optional Bearer token |
+| `MDS_AP_MUSICFETCH_API_KEY` | Musicfetch `x-token` (BYO paid key) |
+| `MDS_AP_GITHUB_TOKEN` | Optional GitHub token for Release Manager's GitHub updater |
 
-## Hook, REST & AJAX Contracts
+### Release Post Meta (`post_type = release`)
 
-### MDS Release Manager Integration Hooks
-
-| Hook | Type | Handler | Purpose |
+| Meta Key | Core Fallback Read | Provider | WPML (`wpml-config.xml`) |
 | :--- | :--- | :--- | :--- |
-| `mds_rm_site_settings_tabs` | Filter | `MDS\Bandcamp\Admin\AdminInterface::register_release_manager_tab` | Registers the **Bandcamp Integration** tab under Releases → Settings. |
-| `mds_rm_register_custom_meta_boxes` | Action | `MDS\Bandcamp\Admin\Admin::register_meta_box` | Registers the **Bandcamp Integration** meta box (`mds_bc_settings`) on `release` and `artist` post types. |
-| `mds_rm_save_custom_meta` | Action | `MDS\Bandcamp\Admin\Admin::save_meta` | Persists Release (`album_id`, `url`) and Artist (`artist_url`, `subdomain`) Bandcamp metadata. |
-| `mds_rm_after_buy_now_field` | Action | `MDS\Bandcamp\Admin\Admin::render_buy_now_button` | Outputs the **Use Bandcamp URL** button in the Release Commerce meta box to populate a `Digital Download` / `Bandcamp` Buy Now row. |
-| `init` (priority `20`) | Action | `MDS\Bandcamp\Admin\Admin::ensure_digital_download_media_format` | Ensures the `digital-download` `release_media_format` term and `fas fa-download` icon exist on the Hub site. |
-| `mds_rm_register_audio_players` | Filter | `MDS\Bandcamp\Frontend\Frontend::register_audio_player` | Registers **Bandcamp Album Player** (`bandcamp`) in the Audio Player Manager with declarative styling fields. |
-| `mds_rm_release_links_audio_html` | Filter | `MDS\Bandcamp\Frontend\Frontend::filter_release_links_audio` | Supplies the rendered Bandcamp player (or empty string to fall back to core HTML5 `.mp3`) to the Release Links block. |
-| `mds_rm_release_picker_item` | Filter | `MDS\Bandcamp\Api\RestApi::enrich_release_picker_item` | Appends `album_id`, `url`, and `subdomain` to preloaded `window.mdsRmCatalog` Release records. |
-| `mds_rm_artist_picker_item` | Filter | `MDS\Bandcamp\Api\RestApi::enrich_artist_picker_item` | Appends `artist_url` and `subdomain` to preloaded `window.mdsRmCatalog` Artist records. |
+| `upc_ean` | Owned by Core | Apple Music, Deezer, Spotify, TIDAL, Musicfetch | Managed by Core |
+| `bandcamp_album_id`, `bandcamp_album_url`, `mds_bandcamp_integration` | — | Bandcamp | `copy` |
+| `mds_ap_audius_url` | `audius_url` | Audius | `copy` |
+| `mds_ap_soundcloud_url` | `soundcloud_url` | SoundCloud | `copy` |
+| `mds_ap_jamendo_url` | `jamendo_url` | Jamendo | `copy` |
+| `mds_ap_funkwhale_url` | `funkwhale_url` | Funkwhale | `copy` |
+| `mds_ap_tidal_url` | `tidal_url` | TIDAL | `copy` |
+| `mds_ap_mixcloud_url` | `mixcloud_url` | Mixcloud | `copy` |
+| `mds_ap_audiomack_url` | `audiomack_url` | Audiomack | `copy` |
+| `mds_ap_spotify_url` | `spotify_url` | Spotify (embed fallback) | Managed by Core |
 
-### REST API & AJAX Endpoints
+### Transients & Uninstall Cleanup
 
-- **`GET /mds-bandcamp/v1/releases`** (`MDS\Bandcamp\Api\RestApi::handle_releases_request`)
-  - **Permission:** `current_user_can( 'edit_posts' )`
-  - **Args:** `search` (`string`), `page` (`int >= 1`)
-  - **Behavior:** Delegates matching to `MDS_RM_Release_Search` and filters to published Releases with a verified Bandcamp `album_id`.
-- **`POST /mds-bandcamp/v1/settings`** (`MDS\Bandcamp\Api\RestApi::handle_save_settings_request`)
-  - **Permission:** `current_user_can( 'manage_options' )`
-  - **Args:** `transient` (`int` 1–1440, required)
-  - **Behavior:** Sanitizes and persists `mds_bandcamp__settings` via AJAX (`js/admin-settings.js`) without reloading or losing the `#tab-bandcamp` tab.
-- **`POST /mds-bandcamp/v1/cache/clear`** (`MDS\Bandcamp\Api\RestApi::handle_clear_cache_request`)
-  - **Permission:** `current_user_can( 'manage_options' )`
-  - **Behavior:** Calls `MDS\Bandcamp\Core\Cache::clear_all()` to purge `mds_bandcamp*` and `mds_bc_*` transients and flush object cache, returning JSON for in-place table updates.
-- **`wp_ajax_mds_bc_verify_url`** (`MDS\Bandcamp\Admin\Admin::ajax_verify_url`)
-  - Nonce-protected (`mds_bc_verify_nonce`) AJAX endpoint used by `js/metabox-verify.js` (`mdsBcMetabox`) to verify Bandcamp album or artist URLs.
-- **`admin_post_mds_bc_clear_cache`** (`MDS\Bandcamp\Core\Cache::handle_clear_cache`)
-  - Non-JS fallback handler that calls `Cache::clear_all()` and redirects back to `wp_get_referer()` (appending `#tab-bandcamp` on Release Manager settings).
-- **`heartbeat_received`** (`MDS\Bandcamp\Core\Cache::handle_heartbeat_received`)
-  - Native WordPress Heartbeat API filter that appends `mds_bc_cache` (`transients`, `total_size`) when `data.mds_bc_refresh_cache` is requested by a `manage_options` user while the Bandcamp settings pane is active.
+- **Provider manifests:** `mds_ap_<provider>_<md5(target)>` (12h UPC/embed providers, 1h Audius/Funkwhale, 30m Bandcamp, 15m SoundCloud, 3m error backoff; Musicfetch honors HTTP `429 Retry-After` up to 1h).
+- **OAuth tokens:** `mds_ap_soundcloud_token`, `mds_ap_spotify_token`, `mds_ap_tidal_token`.
+- **Uninstall (`uninstall.php`):** Deletes `mds_ap_credentials`, `mds_ap_provider_options`, `mds_ap_cached_keys`, all OAuth token transients, and all `_transient_mds_ap_*` / `_transient_timeout_mds_ap_*` rows across single-site and Multisite installs while preserving Release post metadata.
 
-### Editor & Frontend Runtime Contracts
+## Hook, REST, AJAX & Runtime Contracts
 
-- **`js/release-picker.js`** exposes `window.mdsBcUseReleasePicker` (Album, Miniplayer, Merch blocks) and `window.mdsBcUseArtistPicker` (Discography block), preferring in-memory filtering of `window.mdsRmCatalog` with REST fallback.
-- **Asset Handles:** `mds-bc-blocks`, `mds-bc-admin`, `mds-bc-public`, `mds-bc-release-picker`, `mds-bc-metabox`.
-- **Templates:** `MDS\Bandcamp\Core\Templates::render()` resolves frontend templates (`frontend-widget.php`) via `locate_template( 'mds-bandcamp-integration/<template>' )` before falling back to `templates/`, while `admin-settings.php` is strictly plugin-owned under `templates/admin/`.
+- **Release Manager Hooks:** `mds_rm_audio_providers`, `mds_rm_cache_adapters`, `mds_rm_purge_cache` (emitted), `mds_rm_loaded`, `mds_rm_site_settings_tabs`, `mds_rm_register_custom_meta_boxes`, `mds_rm_save_release_meta`, `mds_rm_after_buy_now_field`, `mds_rm_default_media_formats`.
+- **REST API (`mds-ap/v1`, `manage_options`):**
+  - `GET /mds-ap/v1/settings` — Returns `{ providers, credentials, provider_options, cache }`.
+  - `POST /mds-ap/v1/settings` — Persists `priority`, `disabled`, `credentials`, and `provider_options`; resets core audio cache and fires `mds_rm_purge_cache`.
+  - `POST /mds-ap/v1/test-connection` — Live connection test for `soundcloud`, `spotify`, `tidal`, `jamendo`, `funkwhale`, or `musicfetch`.
+  - `POST /mds-ap/v1/clear-cache` — Clears all `mds_ap_*` transients and fires `mds_rm_purge_cache`.
+- **AJAX (`edit_posts` + `mds_bc_verify_nonce`):** `wp_ajax_mds_bc_verify_url`.
+- **Verification:** `composer phpcs`, `composer phpcbf`, and `php tests/providers.php`.

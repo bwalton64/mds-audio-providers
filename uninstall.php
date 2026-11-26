@@ -18,9 +18,11 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 ( static function (): void {
 	$cleanup_site = static function (): void {
 		delete_option( 'mds_ap_credentials' );
+		delete_option( 'mds_ap_provider_options' );
 		delete_option( 'mds_ap_cached_keys' );
 		delete_transient( 'mds_ap_soundcloud_token' );
 		delete_transient( 'mds_ap_spotify_token' );
+		delete_transient( 'mds_ap_tidal_token' );
 
 		global $wpdb;
 		if ( isset( $wpdb ) && is_object( $wpdb ) && method_exists( $wpdb, 'query' ) ) {

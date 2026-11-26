@@ -4,5 +4,11 @@
 		<custom-field action="copy">bandcamp_album_url</custom-field>
 		<custom-field action="copy">mds_bandcamp_integration</custom-field>
 		<custom-field action="copy">mds_ap_soundcloud_url</custom-field>
+		<custom-field action="copy">mds_ap_audius_url</custom-field>
+		<custom-field action="copy">mds_ap_jamendo_url</custom-field>
+		<custom-field action="copy">mds_ap_funkwhale_url</custom-field>
+		<custom-field action="copy">mds_ap_tidal_url</custom-field>
+		<custom-field action="copy">mds_ap_mixcloud_url</custom-field>
+		<custom-field action="copy">mds_ap_audiomack_url</custom-field>
 	</custom-fields>
 </wpml-config>

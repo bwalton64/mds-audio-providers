@@ -12,8 +12,13 @@ namespace MDS\AudioProviders\Api;
 
 use MDS\AudioProviders\Core\Cache;
 use MDS\AudioProviders\Providers\Credentials;
+use MDS\AudioProviders\Providers\FunkwhaleProvider;
+use MDS\AudioProviders\Providers\JamendoProvider;
+use MDS\AudioProviders\Providers\MusicfetchProvider;
+use MDS\AudioProviders\Providers\ProviderOptions;
 use MDS\AudioProviders\Providers\SoundCloudProvider;
 use MDS\AudioProviders\Providers\SpotifyProvider;
+use MDS\AudioProviders\Providers\TidalProvider;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -129,7 +134,7 @@ final class RestApi {
 		}
 
 		if ( isset( $params['credentials'] ) && is_array( $params['credentials'] ) ) {
-			foreach ( array( 'soundcloud', 'spotify' ) as $slug ) {
+			foreach ( array( 'soundcloud', 'spotify', 'tidal', 'jamendo', 'funkwhale', 'musicfetch' ) as $slug ) {
 				if ( ! isset( $params['credentials'][ $slug ] ) || ! is_array( $params['credentials'][ $slug ] ) ) {
 					continue;
 				}
@@ -141,6 +146,10 @@ final class RestApi {
 					Credentials::save( $slug, $cid, $sec, $clear );
 				}
 			}
+		}
+
+		if ( isset( $params['provider_options'] ) && is_array( $params['provider_options'] ) ) {
+			ProviderOptions::save_all( $params['provider_options'] );
 		}
 
 		if ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) && method_exists( \MDS\ReleaseManager\Api\ExtensionApi::class, 'reset_audio_cache' ) ) {
@@ -176,6 +185,10 @@ final class RestApi {
 		$result = match ( $provider ) {
 			'soundcloud' => SoundCloudProvider::test_connection(),
 			'spotify'    => SpotifyProvider::test_connection(),
+			'tidal'      => TidalProvider::test_connection(),
+			'jamendo'    => JamendoProvider::test_connection(),
+			'funkwhale'  => FunkwhaleProvider::test_connection(),
+			'musicfetch' => MusicfetchProvider::test_connection(),
 			default      => new WP_Error( 'mds_ap_unknown_provider', __( 'Unsupported provider for connection testing.', 'mds-audio-providers' ), array( 'status' => 400 ) ),
 		};
 
@@ -218,9 +231,10 @@ final class RestApi {
 			: array();
 
 		return array(
-			'providers'   => $providers,
-			'credentials' => Credentials::get_masked_status(),
-			'cache'       => Cache::get_summary(),
+			'providers'        => $providers,
+			'credentials'      => Credentials::get_masked_status(),
+			'provider_options' => ProviderOptions::get_all(),
+			'cache'            => Cache::get_summary(),
 		);
 	}
 }

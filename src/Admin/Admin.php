@@ -15,8 +15,14 @@ use DOMDocument;
 use DOMNode;
 use MDS\AudioProviders\Core\Cache;
 use MDS\AudioProviders\Core\Dependencies;
+use MDS\AudioProviders\Providers\AudiomackProvider;
+use MDS\AudioProviders\Providers\AudiusProvider;
 use MDS\AudioProviders\Providers\BandcampProvider;
+use MDS\AudioProviders\Providers\FunkwhaleProvider;
+use MDS\AudioProviders\Providers\JamendoProvider;
+use MDS\AudioProviders\Providers\MixcloudProvider;
 use MDS\AudioProviders\Providers\SoundCloudProvider;
+use MDS\AudioProviders\Providers\TidalProvider;
 use WP_Post;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -95,7 +101,7 @@ final class Admin {
 
 		add_meta_box(
 			'mds_ap_release_providers',
-			__( 'Audio Providers (Bandcamp & SoundCloud)', 'mds-audio-providers' ),
+			__( 'Audio Providers', 'mds-audio-providers' ),
 			array( self::class, 'render_meta_box' ),
 			'release',
 			'normal',
@@ -104,15 +110,45 @@ final class Admin {
 	}
 
 	/**
-	 * Renders the Audio Providers Release metabox.
+	 * Checks whether a provider slug is currently enabled in Release Manager audio settings.
+	 *
+	 * @param string $slug Provider slug.
+	 * @return bool True when enabled (not listed in `mds_rm_audio_disabled_providers`).
+	 */
+	public static function is_provider_enabled( string $slug ): bool {
+		$disabled = function_exists( 'get_option' ) ? get_option( 'mds_rm_audio_disabled_providers', array() ) : array();
+		if ( ! is_array( $disabled ) ) {
+			return true;
+		}
+		return ! in_array( sanitize_key( $slug ), $disabled, true );
+	}
+
+	/**
+	 * Renders the Audio Providers Release metabox, showing only enabled URL-based providers.
 	 *
 	 * @param WP_Post $post Release post object.
 	 * @return void
 	 */
 	public static function render_meta_box( WP_Post $post ): void {
-		$bc_url         = BandcampProvider::get_album_url( (int) $post->ID );
-		$bc_album_id    = BandcampProvider::get_album_id( (int) $post->ID );
-		$soundcloud_url = SoundCloudProvider::get_soundcloud_url( (int) $post->ID );
+		$post_id        = (int) $post->ID;
+		$bc_enabled     = self::is_provider_enabled( 'bandcamp' );
+		$sc_enabled     = self::is_provider_enabled( 'soundcloud' );
+		$audius_enabled = self::is_provider_enabled( 'audius' );
+		$jm_enabled     = self::is_provider_enabled( 'jamendo' );
+		$fw_enabled     = self::is_provider_enabled( 'funkwhale' );
+		$tidal_enabled  = self::is_provider_enabled( 'tidal' );
+		$mc_enabled     = self::is_provider_enabled( 'mixcloud' );
+		$am_enabled     = self::is_provider_enabled( 'audiomack' );
+
+		$bc_url         = BandcampProvider::get_album_url( $post_id );
+		$bc_album_id    = BandcampProvider::get_album_id( $post_id );
+		$soundcloud_url = SoundCloudProvider::get_soundcloud_url( $post_id );
+		$audius_url     = AudiusProvider::get_audius_url( $post_id );
+		$jamendo_url    = JamendoProvider::get_jamendo_url( $post_id );
+		$funkwhale_url  = FunkwhaleProvider::get_funkwhale_url( $post_id );
+		$tidal_url      = TidalProvider::get_tidal_url( $post_id );
+		$mixcloud_url   = MixcloudProvider::get_mixcloud_url( $post_id );
+		$audiomack_url  = AudiomackProvider::get_audiomack_url( $post_id );
 
 		wp_nonce_field( 'mds_ap_save_release', 'mds_ap_nonce' );
 		?>
@@ -122,11 +158,12 @@ final class Admin {
 				<div class="mds-section-info__body">
 					<strong class="mds-section-info__title"><?php esc_html_e( 'Automatic & Provider-Specific Audio Sources', 'mds-audio-providers' ); ?></strong>
 					<p class="mds-section-info__summary">
-						<?php esc_html_e( 'Apple Music, Deezer, and Spotify resolve automatically from this Release’s Barcode (UPC/EAN). Configure Bandcamp or SoundCloud below to enable those providers for this release.', 'mds-audio-providers' ); ?>
+						<?php esc_html_e( 'Apple Music, Deezer, Spotify, and TIDAL resolve automatically from this Release’s Barcode (UPC/EAN). Only enabled URL-based providers are shown below; matching URLs from Release Links are also detected automatically.', 'mds-audio-providers' ); ?>
 					</p>
 				</div>
 			</div>
 
+			<?php if ( $bc_enabled ) : ?>
 			<div class="mds-control-group">
 				<h4 class="mds-control-group__title"><?php esc_html_e( 'Bandcamp', 'mds-audio-providers' ); ?></h4>
 				<div class="mds-style-grid-2col">
@@ -164,7 +201,29 @@ final class Admin {
 					</div>
 				</div>
 			</div>
+			<?php endif; ?>
 
+			<?php if ( $audius_enabled ) : ?>
+			<div class="mds-control-group">
+				<h4 class="mds-control-group__title"><?php esc_html_e( 'Audius', 'mds-audio-providers' ); ?></h4>
+				<div class="mds-style-field">
+					<label class="mds-style-field__label" for="mds_ap_audius_url"><?php esc_html_e( 'Audius Track / Album / Playlist URL', 'mds-audio-providers' ); ?></label>
+					<input
+						type="url"
+						id="mds_ap_audius_url"
+						name="mds_ap_audius_url"
+						value="<?php echo esc_attr( $audius_url ); ?>"
+						class="regular-text"
+						placeholder="https://audius.co/artist/album/release-name"
+					/>
+					<p class="mds-style-field__help">
+						<?php esc_html_e( 'Optional. Resolves native 320kbps HTML5 audio streams via the Audius Open Audio Protocol (zero API keys required).', 'mds-audio-providers' ); ?>
+					</p>
+				</div>
+			</div>
+			<?php endif; ?>
+
+			<?php if ( $sc_enabled ) : ?>
 			<div class="mds-control-group">
 				<h4 class="mds-control-group__title"><?php esc_html_e( 'SoundCloud', 'mds-audio-providers' ); ?></h4>
 				<div class="mds-style-field">
@@ -182,12 +241,113 @@ final class Admin {
 					</p>
 				</div>
 			</div>
+			<?php endif; ?>
+
+			<?php if ( $jm_enabled ) : ?>
+			<div class="mds-control-group">
+				<h4 class="mds-control-group__title"><?php esc_html_e( 'Jamendo', 'mds-audio-providers' ); ?></h4>
+				<div class="mds-style-field">
+					<label class="mds-style-field__label" for="mds_ap_jamendo_url"><?php esc_html_e( 'Jamendo Album / Track URL', 'mds-audio-providers' ); ?></label>
+					<input
+						type="url"
+						id="mds_ap_jamendo_url"
+						name="mds_ap_jamendo_url"
+						value="<?php echo esc_attr( $jamendo_url ); ?>"
+						class="regular-text"
+						placeholder="https://www.jamendo.com/album/123456/release-name"
+					/>
+					<p class="mds-style-field__help">
+						<?php esc_html_e( 'Optional. Resolves native MP3 streams via Jamendo API v3.0 (requires a free Jamendo Client ID in Audio Providers settings).', 'mds-audio-providers' ); ?>
+					</p>
+				</div>
+			</div>
+			<?php endif; ?>
+
+			<?php if ( $fw_enabled ) : ?>
+			<div class="mds-control-group">
+				<h4 class="mds-control-group__title"><?php esc_html_e( 'Funkwhale', 'mds-audio-providers' ); ?></h4>
+				<div class="mds-style-field">
+					<label class="mds-style-field__label" for="mds_ap_funkwhale_url"><?php esc_html_e( 'Funkwhale Album / Track URL', 'mds-audio-providers' ); ?></label>
+					<input
+						type="url"
+						id="mds_ap_funkwhale_url"
+						name="mds_ap_funkwhale_url"
+						value="<?php echo esc_attr( $funkwhale_url ); ?>"
+						class="regular-text"
+						placeholder="https://open.audio/library/albums/12345"
+					/>
+					<p class="mds-style-field__help">
+						<?php esc_html_e( 'Optional. Resolves native HTML5 audio streams directly from any public or authenticated Funkwhale pod.', 'mds-audio-providers' ); ?>
+					</p>
+				</div>
+			</div>
+			<?php endif; ?>
+
+			<?php if ( $tidal_enabled ) : ?>
+			<div class="mds-control-group">
+				<h4 class="mds-control-group__title"><?php esc_html_e( 'TIDAL', 'mds-audio-providers' ); ?></h4>
+				<div class="mds-style-field">
+					<label class="mds-style-field__label" for="mds_ap_tidal_url"><?php esc_html_e( 'TIDAL Album / Track / Playlist URL', 'mds-audio-providers' ); ?></label>
+					<input
+						type="url"
+						id="mds_ap_tidal_url"
+						name="mds_ap_tidal_url"
+						value="<?php echo esc_attr( $tidal_url ); ?>"
+						class="regular-text"
+						placeholder="https://tidal.com/browse/album/123456789"
+					/>
+					<p class="mds-style-field__help">
+						<?php esc_html_e( 'Optional. TIDAL also resolves automatically by Barcode (UPC/EAN) when TIDAL OAuth credentials are configured.', 'mds-audio-providers' ); ?>
+					</p>
+				</div>
+			</div>
+			<?php endif; ?>
+
+			<?php if ( $mc_enabled ) : ?>
+			<div class="mds-control-group">
+				<h4 class="mds-control-group__title"><?php esc_html_e( 'Mixcloud', 'mds-audio-providers' ); ?></h4>
+				<div class="mds-style-field">
+					<label class="mds-style-field__label" for="mds_ap_mixcloud_url"><?php esc_html_e( 'Mixcloud Show / Mix URL', 'mds-audio-providers' ); ?></label>
+					<input
+						type="url"
+						id="mds_ap_mixcloud_url"
+						name="mds_ap_mixcloud_url"
+						value="<?php echo esc_attr( $mixcloud_url ); ?>"
+						class="regular-text"
+						placeholder="https://www.mixcloud.com/artist/show-name/"
+					/>
+					<p class="mds-style-field__help">
+						<?php esc_html_e( 'Optional. Renders the official Mixcloud embed widget for DJ mixes and radio shows (zero API keys required).', 'mds-audio-providers' ); ?>
+					</p>
+				</div>
+			</div>
+			<?php endif; ?>
+
+			<?php if ( $am_enabled ) : ?>
+			<div class="mds-control-group">
+				<h4 class="mds-control-group__title"><?php esc_html_e( 'Audiomack', 'mds-audio-providers' ); ?></h4>
+				<div class="mds-style-field">
+					<label class="mds-style-field__label" for="mds_ap_audiomack_url"><?php esc_html_e( 'Audiomack Song / Album / Playlist URL', 'mds-audio-providers' ); ?></label>
+					<input
+						type="url"
+						id="mds_ap_audiomack_url"
+						name="mds_ap_audiomack_url"
+						value="<?php echo esc_attr( $audiomack_url ); ?>"
+						class="regular-text"
+						placeholder="https://audiomack.com/artist/album/release-name"
+					/>
+					<p class="mds-style-field__help">
+						<?php esc_html_e( 'Optional. Renders the official Audiomack embed player (zero API keys required).', 'mds-audio-providers' ); ?>
+					</p>
+				</div>
+			</div>
+			<?php endif; ?>
 		</div>
 		<?php
 	}
 
 	/**
-	 * Saves Bandcamp and SoundCloud meta on `mds_rm_save_release_meta`.
+	 * Saves Bandcamp and URL-based provider meta on `mds_rm_save_release_meta`.
 	 *
 	 * @param int     $post_id Release post ID.
 	 * @param WP_Post $post    Release post object.
@@ -205,36 +365,53 @@ final class Admin {
 			return;
 		}
 
-		// Save Bandcamp meta (preserving legacy keys for backward compatibility).
-		$album_id = isset( $_POST['mds_bc_album_id'] ) ? absint( wp_unslash( (string) $_POST['mds_bc_album_id'] ) ) : 0;
-		$bc_url   = isset( $_POST['mds_bc_url'] ) ? esc_url_raw( wp_unslash( (string) $_POST['mds_bc_url'] ) ) : '';
+		// Save Bandcamp meta only when its fields were rendered (preserving legacy keys).
+		if ( isset( $_POST['mds_bc_album_id'] ) || isset( $_POST['mds_bc_url'] ) ) {
+			$album_id = isset( $_POST['mds_bc_album_id'] ) ? absint( wp_unslash( (string) $_POST['mds_bc_album_id'] ) ) : 0;
+			$bc_url   = isset( $_POST['mds_bc_url'] ) ? esc_url_raw( wp_unslash( (string) $_POST['mds_bc_url'] ) ) : '';
 
-		if ( $album_id > 0 ) {
-			update_post_meta(
-				$post_id,
-				'mds_bandcamp_integration',
-				array(
-					'url'      => $bc_url,
-					'album_id' => $album_id,
-					'saved_at' => time(),
-				)
-			);
-			update_post_meta( $post_id, 'bandcamp_album_id', (string) $album_id );
-			update_post_meta( $post_id, 'bandcamp_album_url', $bc_url );
-			Cache::delete( 'bandcamp', (string) $album_id );
-		} else {
-			delete_post_meta( $post_id, 'mds_bandcamp_integration' );
-			delete_post_meta( $post_id, 'bandcamp_album_id' );
-			delete_post_meta( $post_id, 'bandcamp_album_url' );
+			if ( $album_id > 0 ) {
+				update_post_meta(
+					$post_id,
+					'mds_bandcamp_integration',
+					array(
+						'url'      => $bc_url,
+						'album_id' => $album_id,
+						'saved_at' => time(),
+					)
+				);
+				update_post_meta( $post_id, 'bandcamp_album_id', (string) $album_id );
+				update_post_meta( $post_id, 'bandcamp_album_url', $bc_url );
+				Cache::delete( 'bandcamp', (string) $album_id );
+			} else {
+				delete_post_meta( $post_id, 'mds_bandcamp_integration' );
+				delete_post_meta( $post_id, 'bandcamp_album_id' );
+				delete_post_meta( $post_id, 'bandcamp_album_url' );
+			}
 		}
 
-		// Save SoundCloud URL.
-		$sc_url = isset( $_POST['mds_ap_soundcloud_url'] ) ? esc_url_raw( wp_unslash( (string) $_POST['mds_ap_soundcloud_url'] ) ) : '';
-		if ( '' !== $sc_url ) {
-			update_post_meta( $post_id, 'mds_ap_soundcloud_url', $sc_url );
-			Cache::delete( 'soundcloud', $sc_url );
-		} else {
-			delete_post_meta( $post_id, 'mds_ap_soundcloud_url' );
+		// Save URL-based provider fields only when present in POST (respecting conditional visibility).
+		$url_fields = array(
+			'mds_ap_soundcloud_url' => 'soundcloud',
+			'mds_ap_audius_url'     => 'audius',
+			'mds_ap_jamendo_url'    => 'jamendo',
+			'mds_ap_funkwhale_url'  => 'funkwhale',
+			'mds_ap_tidal_url'      => 'tidal',
+			'mds_ap_mixcloud_url'   => 'mixcloud',
+			'mds_ap_audiomack_url'  => 'audiomack',
+		);
+
+		foreach ( $url_fields as $meta_key => $provider_slug ) {
+			if ( ! isset( $_POST[ $meta_key ] ) ) {
+				continue;
+			}
+			$url = esc_url_raw( wp_unslash( (string) $_POST[ $meta_key ] ) );
+			if ( '' !== $url ) {
+				update_post_meta( $post_id, $meta_key, $url );
+				Cache::delete( $provider_slug, $url );
+			} else {
+				delete_post_meta( $post_id, $meta_key );
+			}
 		}
 	}
 

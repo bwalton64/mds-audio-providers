@@ -66,42 +66,55 @@ final class SpotifyProvider implements AudioProviderInterface {
 	}
 
 	/**
-	 * Checks whether Spotify credentials are configured and the release has a UPC/EAN.
+	 * Checks whether Spotify can resolve this release via OAuth+UPC or via Spotify URL embed fallback.
 	 *
 	 * @param int $post_id Release post ID.
-	 * @return bool True when credentials and UPC/EAN exist.
+	 * @return bool True when credentials+UPC exist or a Spotify URL exists with embed fallback enabled.
 	 */
 	public function supports_release( int $post_id ): bool {
 		$creds = Credentials::get( 'spotify' );
-		if ( '' === $creds['client_id'] || '' === $creds['client_secret'] ) {
-			return false;
+		if ( '' !== $creds['client_id'] && '' !== $creds['client_secret'] && '' !== self::get_upc( $post_id ) ) {
+			return true;
 		}
-		return '' !== self::get_upc( $post_id );
+		if ( ProviderOptions::get_bool( 'spotify', 'embed_fallback', true ) && null !== self::get_spotify_embed_target( $post_id ) ) {
+			return true;
+		}
+		return false;
 	}
 
 	/**
-	 * Resolves native 30-second Spotify `preview_url` tracks by UPC/EAN when available.
+	 * Resolves native 30-second Spotify `preview_url` tracks by UPC/EAN when available,
+	 * with optional official Spotify iframe embed fallback when `embed_fallback` is enabled.
 	 *
 	 * @param int                  $post_id Release post ID.
 	 * @param array<string, mixed> $context Optional resolution context (`fresh`).
-	 * @return array<string, mixed>|null Raw manifest array, or null when no `preview_url` is returned.
+	 * @return array<string, mixed>|null Raw manifest array, or null when unavailable.
 	 */
 	public function resolve( int $post_id, array $context = array() ): ?array {
-		$upc = self::get_upc( $post_id );
-		if ( '' === $upc ) {
+		$upc            = self::get_upc( $post_id );
+		$embed_fallback = ProviderOptions::get_bool( 'spotify', 'embed_fallback', true );
+		$direct_target  = $embed_fallback ? self::get_spotify_embed_target( $post_id ) : null;
+		$cache_target   = '' !== $upc ? $upc : ( null !== $direct_target ? $direct_target['type'] . ':' . $direct_target['id'] : '' );
+		if ( '' === $cache_target ) {
 			return null;
 		}
+		$cache_key_target = $cache_target . ( $embed_fallback ? ':embed' : ':native' );
 
 		$fresh = ! empty( $context['fresh'] );
 		if ( ! $fresh ) {
-			$cached = Cache::get( $this->get_slug(), $upc );
+			$cached = Cache::get( $this->get_slug(), $cache_key_target );
 			if ( is_array( $cached ) ) {
 				return ! empty( $cached['error'] ) ? null : $cached;
 			}
 		}
 
-		$token = self::get_access_token();
+		$token = '' !== $upc ? self::get_access_token() : '';
 		if ( '' === $token ) {
+			if ( null !== $direct_target ) {
+				$manifest = self::build_embed_manifest( $post_id, $direct_target['type'], $direct_target['id'], $direct_target['url'] );
+				Cache::set( $this->get_slug(), $cache_key_target, $manifest, self::CACHE_TTL );
+				return $manifest;
+			}
 			return null;
 		}
 
@@ -120,7 +133,12 @@ final class SpotifyProvider implements AudioProviderInterface {
 			: null;
 
 		if ( null === $album || empty( $album['id'] ) ) {
-			Cache::set( $this->get_slug(), $upc, array( 'error' => true ), Cache::ERROR_BACKOFF_TTL );
+			if ( null !== $direct_target ) {
+				$manifest = self::build_embed_manifest( $post_id, $direct_target['type'], $direct_target['id'], $direct_target['url'] );
+				Cache::set( $this->get_slug(), $cache_key_target, $manifest, self::CACHE_TTL );
+				return $manifest;
+			}
+			Cache::set( $this->get_slug(), $cache_key_target, array( 'error' => true ), Cache::ERROR_BACKOFF_TTL );
 			return null;
 		}
 
@@ -137,6 +155,8 @@ final class SpotifyProvider implements AudioProviderInterface {
 
 		$artist_name = isset( $album['artists'][0]['name'] ) ? (string) $album['artists'][0]['name'] : '';
 		$source_url  = isset( $album['external_urls']['spotify'] ) ? (string) $album['external_urls']['spotify'] : '';
+		$artwork     = isset( $album['images'][0]['url'] ) ? (string) $album['images'][0]['url'] : '';
+		$album_title = (string) ( $album['name'] ?? '' );
 		$tracks      = array();
 
 		foreach ( $raw_tracks as $idx => $item ) {
@@ -156,17 +176,21 @@ final class SpotifyProvider implements AudioProviderInterface {
 		}
 
 		if ( empty( $tracks ) ) {
+			if ( $embed_fallback ) {
+				$manifest = self::build_embed_manifest( $post_id, 'album', $album_id, $source_url, $album_title, $artist_name, $artwork );
+				Cache::set( $this->get_slug(), $cache_key_target, $manifest, self::CACHE_TTL );
+				return $manifest;
+			}
 			// Standard/dev-mode Spotify apps return preview_url: null; back off so fallback providers take over cleanly.
-			Cache::set( $this->get_slug(), $upc, array( 'error' => true ), Cache::ERROR_BACKOFF_TTL );
+			Cache::set( $this->get_slug(), $cache_key_target, array( 'error' => true ), Cache::ERROR_BACKOFF_TTL );
 			return null;
 		}
 
-		$artwork  = isset( $album['images'][0]['url'] ) ? (string) $album['images'][0]['url'] : '';
 		$manifest = array(
 			'provider'       => $this->get_slug(),
 			'providerLabel'  => $this->get_label(),
 			'releaseId'      => $post_id,
-			'title'          => (string) ( $album['name'] ?? '' ),
+			'title'          => $album_title,
 			'artist'         => $artist_name,
 			'artworkUrl'     => $artwork,
 			'sourceUrl'      => $source_url,
@@ -175,8 +199,81 @@ final class SpotifyProvider implements AudioProviderInterface {
 			'tracks'         => $tracks,
 		);
 
-		Cache::set( $this->get_slug(), $upc, $manifest, self::CACHE_TTL );
+		Cache::set( $this->get_slug(), $cache_key_target, $manifest, self::CACHE_TTL );
 		return $manifest;
+	}
+
+	/**
+	 * Builds an official Spotify iframe embed manifest.
+	 *
+	 * @param int    $post_id    Release post ID.
+	 * @param string $type       Spotify entity type (`album`, `track`, or `playlist`).
+	 * @param string $entity_id  Spotify base62 ID.
+	 * @param string $source_url Canonical Spotify URL.
+	 * @param string $title      Optional album/track title.
+	 * @param string $artist     Optional artist label.
+	 * @param string $artwork    Optional artwork URL.
+	 * @return array<string, mixed> Raw manifest array.
+	 */
+	public static function build_embed_manifest(
+		int $post_id,
+		string $type,
+		string $entity_id,
+		string $source_url = '',
+		string $title = '',
+		string $artist = '',
+		string $artwork = ''
+	): array {
+		$clean_type = in_array( $type, array( 'album', 'track', 'playlist' ), true ) ? $type : 'album';
+		$clean_id   = preg_replace( '/[^A-Za-z0-9]/', '', $entity_id );
+		$height     = 'track' === $clean_type ? 152 : 352;
+		$iframe_src = sprintf( 'https://open.spotify.com/embed/%s/%s?utm_source=generator', $clean_type, $clean_id );
+
+		return array(
+			'provider'       => 'spotify',
+			'providerLabel'  => __( 'Spotify', 'mds-audio-providers' ),
+			'releaseId'      => $post_id,
+			'title'          => $title,
+			'artist'         => $artist,
+			'artworkUrl'     => $artwork,
+			'sourceUrl'      => '' !== $source_url ? $source_url : sprintf( 'https://open.spotify.com/%s/%s', $clean_type, $clean_id ),
+			'isTimedPreview' => true,
+			'ttl'            => self::CACHE_TTL,
+			'embedHtml'      => '<iframe style="border:0;border-radius:12px;width:100%;height:' . (int) $height . 'px;" src="' . esc_url( $iframe_src ) . '" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>',
+			'tracks'         => array(),
+		);
+	}
+
+	/**
+	 * Extracts a Spotify album/track/playlist ID from release post meta (`spotify_url`).
+	 *
+	 * @param int $post_id Release post ID.
+	 * @return array{type: string, id: string, url: string}|null Target descriptor, or null.
+	 */
+	public static function get_spotify_embed_target( int $post_id ): ?array {
+		if ( $post_id <= 0 || ! function_exists( 'get_post_meta' ) ) {
+			return null;
+		}
+		foreach ( array( 'mds_ap_spotify_url', 'spotify_url' ) as $key ) {
+			$raw = get_post_meta( $post_id, $key, true );
+			if ( ! is_string( $raw ) || '' === trim( $raw ) ) {
+				continue;
+			}
+			$clean  = esc_url_raw( trim( $raw ) );
+			$parsed = wp_parse_url( $clean );
+			if ( empty( $parsed['host'] ) || ! preg_match( '/(^|\.)open\.spotify\.com$/i', (string) $parsed['host'] ) ) {
+				continue;
+			}
+			$path = isset( $parsed['path'] ) ? trim( (string) $parsed['path'], '/' ) : '';
+			if ( preg_match( '#^(?:intl-[a-z-]+/)?(album|track|playlist)/([A-Za-z0-9]{10,40})(?:/|$)#i', $path, $matches ) ) {
+				return array(
+					'type' => strtolower( $matches[1] ),
+					'id'   => $matches[2],
+					'url'  => $clean,
+				);
+			}
+		}
+		return null;
 	}
 
 	/**

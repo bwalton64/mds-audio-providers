@@ -36,34 +36,70 @@ final class Credentials {
 	/**
 	 * Constant map for `wp-config.php` overrides.
 	 *
-	 * @var array<string, array{client_id: string, client_secret: string}>
+	 * @var array<string, array{client_id: string, client_secret: string, require_secret: bool, secret_only?: bool}>
 	 */
 	private const CONSTANTS = array(
 		'soundcloud' => array(
-			'client_id'     => 'MDS_AP_SOUNDCLOUD_CLIENT_ID',
-			'client_secret' => 'MDS_AP_SOUNDCLOUD_CLIENT_SECRET',
+			'client_id'      => 'MDS_AP_SOUNDCLOUD_CLIENT_ID',
+			'client_secret'  => 'MDS_AP_SOUNDCLOUD_CLIENT_SECRET',
+			'require_secret' => true,
 		),
 		'spotify'    => array(
-			'client_id'     => 'MDS_AP_SPOTIFY_CLIENT_ID',
-			'client_secret' => 'MDS_AP_SPOTIFY_CLIENT_SECRET',
+			'client_id'      => 'MDS_AP_SPOTIFY_CLIENT_ID',
+			'client_secret'  => 'MDS_AP_SPOTIFY_CLIENT_SECRET',
+			'require_secret' => true,
+		),
+		'tidal'      => array(
+			'client_id'      => 'MDS_AP_TIDAL_CLIENT_ID',
+			'client_secret'  => 'MDS_AP_TIDAL_CLIENT_SECRET',
+			'require_secret' => true,
+		),
+		'jamendo'    => array(
+			'client_id'      => 'MDS_AP_JAMENDO_CLIENT_ID',
+			'client_secret'  => 'MDS_AP_JAMENDO_CLIENT_SECRET',
+			'require_secret' => false,
+		),
+		'funkwhale'  => array(
+			'client_id'      => 'MDS_AP_FUNKWHALE_POD_URL',
+			'client_secret'  => 'MDS_AP_FUNKWHALE_TOKEN',
+			'require_secret' => false,
+		),
+		'musicfetch' => array(
+			'client_id'      => '',
+			'client_secret'  => 'MDS_AP_MUSICFETCH_API_KEY',
+			'require_secret' => true,
+			'secret_only'    => true,
 		),
 	);
 
 	/**
 	 * Retrieves decrypted credentials for a provider.
 	 *
-	 * @param string $provider Provider slug (`soundcloud` or `spotify`).
+	 * @param string $provider Provider slug (`soundcloud`, `spotify`, `tidal`, `jamendo`, `funkwhale`, `musicfetch`).
 	 * @return array{client_id: string, client_secret: string, source: string}
 	 */
 	public static function get( string $provider ): array {
 		$slug = sanitize_key( $provider );
 		if ( isset( self::CONSTANTS[ $slug ] ) ) {
-			$id_const     = self::CONSTANTS[ $slug ]['client_id'];
-			$secret_const = self::CONSTANTS[ $slug ]['client_secret'];
-			if ( defined( $id_const ) && defined( $secret_const ) ) {
-				$cid = trim( (string) constant( $id_const ) );
+			$spec         = self::CONSTANTS[ $slug ];
+			$secret_only  = ! empty( $spec['secret_only'] );
+			$id_const     = $spec['client_id'];
+			$secret_const = $spec['client_secret'];
+			$has_id_const = '' !== $id_const && defined( $id_const );
+			$has_sc_const = '' !== $secret_const && defined( $secret_const );
+			if ( $secret_only && $has_sc_const ) {
 				$sec = trim( (string) constant( $secret_const ) );
-				if ( '' !== $cid && '' !== $sec ) {
+				if ( '' !== $sec ) {
+					return array(
+						'client_id'     => '',
+						'client_secret' => $sec,
+						'source'        => 'constant',
+					);
+				}
+			} elseif ( ! $secret_only && $has_id_const && ( ! $spec['require_secret'] || $has_sc_const ) ) {
+				$cid = trim( (string) constant( $id_const ) );
+				$sec = $has_sc_const ? trim( (string) constant( $secret_const ) ) : '';
+				if ( '' !== $cid && ( ! $spec['require_secret'] || '' !== $sec ) ) {
 					return array(
 						'client_id'     => $cid,
 						'client_secret' => $sec,
@@ -89,10 +125,16 @@ final class Credentials {
 			? self::decrypt( $stored[ $slug ]['client_secret'] )
 			: '';
 
+		$secret_only    = isset( self::CONSTANTS[ $slug ] ) && ! empty( self::CONSTANTS[ $slug ]['secret_only'] );
+		$require_secret = isset( self::CONSTANTS[ $slug ] ) ? self::CONSTANTS[ $slug ]['require_secret'] : true;
+		$is_configured  = $secret_only
+			? '' !== $client_secret
+			: ( '' !== $client_id && ( ! $require_secret || '' !== $client_secret ) );
+
 		return array(
 			'client_id'     => $client_id,
 			'client_secret' => $client_secret,
-			'source'        => ( '' !== $client_id && '' !== $client_secret ) ? 'option' : 'none',
+			'source'        => $is_configured ? 'option' : 'none',
 		);
 	}
 
@@ -103,12 +145,18 @@ final class Credentials {
 	 */
 	public static function get_masked_status(): array {
 		$out = array();
-		foreach ( array_keys( self::CONSTANTS ) as $slug ) {
-			$creds        = self::get( $slug );
+		foreach ( self::CONSTANTS as $slug => $spec ) {
+			$creds       = self::get( $slug );
+			$secret_only = ! empty( $spec['secret_only'] );
+			$configured  = $secret_only
+				? '' !== $creds['client_secret']
+				: ( '' !== $creds['client_id'] && ( ! $spec['require_secret'] || '' !== $creds['client_secret'] ) );
+			$display_raw = $secret_only ? $creds['client_secret'] : $creds['client_id'];
+
 			$out[ $slug ] = array(
-				'configured'       => '' !== $creds['client_id'] && '' !== $creds['client_secret'],
+				'configured'       => $configured,
 				'source'           => $creds['source'],
-				'client_id_masked' => self::mask( $creds['client_id'] ),
+				'client_id_masked' => 'funkwhale' === $slug ? $display_raw : self::mask( $display_raw ),
 			);
 		}
 		return $out;

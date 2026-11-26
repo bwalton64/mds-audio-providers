@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: MDS Audio Providers
- * Description: Audio preview providers (Apple Music, Deezer, Bandcamp, SoundCloud, Spotify) for MDS Release Manager's Unified Audio API.
- * Version: 2.0.3
+ * Description: Audio preview providers (Apple Music, Deezer, Bandcamp, Audius, SoundCloud, Jamendo, Funkwhale, Spotify, TIDAL, Mixcloud, Audiomack, and Musicfetch) for MDS Release Manager's Unified Audio API.
+ * Version: 2.1.0
  * Requires at least: 7.0
  * Requires PHP: 8.0
  * Requires Plugins: mds-release-manager
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'MDS_AP_VERSION' ) ) {
-	define( 'MDS_AP_VERSION', '2.0.3' );
+	define( 'MDS_AP_VERSION', '2.1.0' );
 }
 if ( ! defined( 'MDS_AP_FILE' ) ) {
 	define( 'MDS_AP_FILE', __FILE__ );
@@ -73,6 +73,10 @@ if ( class_exists( \MDS\AudioProviders\Providers\ProviderRegistry::class ) ) {
 add_action(
 	'mds_rm_loaded',
 	static function (): void {
+		// Never overwrite a local Git development checkout via WordPress auto-updates.
+		if ( is_dir( MDS_AP_PATH . '.git' ) ) {
+			return;
+		}
 		if ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) ) {
 			\MDS\ReleaseManager\Api\ExtensionApi::register_github_updater(
 				array(

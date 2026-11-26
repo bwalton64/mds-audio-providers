@@ -47,8 +47,15 @@ final class ProviderRegistry {
 			new AppleMusicProvider(),
 			new DeezerProvider(),
 			new BandcampProvider(),
+			new AudiusProvider(),
 			new SoundCloudProvider(),
+			new JamendoProvider(),
+			new FunkwhaleProvider(),
 			new SpotifyProvider(),
+			new TidalProvider(),
+			new MixcloudProvider(),
+			new AudiomackProvider(),
+			new MusicfetchProvider(),
 		);
 
 		foreach ( $instances as $provider ) {

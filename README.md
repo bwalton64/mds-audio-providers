@@ -1,156 +1,94 @@
-# MDS Bandcamp Integration
+# MDS Audio Providers
 
-Adds six Bandcamp blocks, a legacy `[bandcamp]` shortcode, Bandcamp data caching,
-admin settings, REST metadata support, and MDS Release Manager integration.
+Streaming audio preview providers (**Apple Music**, **Deezer**, **Bandcamp**, **Audius**, **SoundCloud**, **Jamendo**, **Funkwhale**, **Spotify**, **TIDAL**, **Mixcloud**, **Audiomack**, and optional **Musicfetch**) for **MDS Release Manager**'s Unified Audio API and mobile-first **Release Player**.
+
+## Overview
+
+MDS Audio Providers registers twelve audio preview providers into MDS Release Manager's `mds_rm_audio_providers` registry. When a visitor plays a release through core's **Release Player** (`mds-rm/release-player` block, `[release-player]` shortcode, or the Release Links audio slot), MDS Release Manager queries enabled providers in your configured priority order until one returns a playable preview, falling back to core's local HTML5 Audio Preview URL if needed.
+
+| Provider | Slug | Default Priority | Auth Required | Playback Mode | Lookup Key | Cache TTL |
+| :--- | :--- | :---: | :--- | :--- | :--- | :---: |
+| **Apple Music** | `apple_music` | `20` | None (zero-auth) | Native HTML5 (30s `.m4a`) | Release `upc_ean` | 12 hours |
+| **Deezer** | `deezer` | `30` | None (zero-auth) | Native HTML5 (30s `.mp3`) | Release `upc_ean` | 12 hours |
+| **Bandcamp** | `bandcamp` | `40` | None (zero-auth) | Native HTML5 JIT + optional Embed toggle | Bandcamp Album ID | 30 minutes |
+| **Audius** | `audius` | `45` | None (zero-auth) | Native HTML5 (320kbps `.mp3`) | Audius URL | 1 hour |
+| **SoundCloud** | `soundcloud` | `50` | OAuth 2.1 Client Credentials | Native HTML5 (`/preview` / `/streams`) | SoundCloud URL | 15 minutes |
+| **Jamendo** | `jamendo` | `55` | Free `client_id` | Native HTML5 (`.mp3`) | Jamendo URL | 12 hours |
+| **Funkwhale** | `funkwhale` | `58` | None (public) / optional Bearer token | Native HTML5 (self-hosted pod) | Funkwhale URL | 1 hour |
+| **Spotify** | `spotify` | `60` | OAuth 2.0 (or URL-only Embed) | Native `preview_url` + optional Embed toggle | Release `upc_ean` / `spotify_url` | 12 hours |
+| **TIDAL** | `tidal` | `65` | Optional OAuth 2.0 v2 (or URL-only) | Official `embed.tidal.com` iframe | Release `upc_ean` / TIDAL URL | 12 hours |
+| **Mixcloud** | `mixcloud` | `70` | None (zero-auth) | Official Mixcloud iframe widget | Mixcloud URL | 12 hours |
+| **Audiomack** | `audiomack` | `75` | None (zero-auth) | Official Audiomack iframe embed | Audiomack URL | 12 hours |
+| **Musicfetch** | `musicfetch` | `80` | Optional Paid BYO `x-token` | Native HTML5 (30s previews across 30+ DSPs) | Release `upc_ean` | 12 hours |
 
 ## Requirements
 
-- WordPress 7.0 or newer (tested up to 7.x)
-- PHP 8.0 or newer
-- Composer (for PSR-4 autoloading and WPCS linting)
-- MDS Release Manager is optional
-  - Without it, the six blocks, shortcode, settings, and REST endpoint remain available.
-  - Release meta-box and release-page integration require MDS Release Manager.
+- **WordPress:** `7.0` or newer (tested up to `7.x`)
+- **PHP:** `8.0` or newer (OpenSSL recommended for AES-256-GCM credential encryption)
+- **Required Plugin:** **MDS Release Manager** (`mds-release-manager`) with the Unified Audio API
+- **Development Tools:** Composer (for PSR-4 autoloading and WPCS/PHPCompatibilityWP linting)
 
-## Blocks
+## Installation & Configuration
 
-- `mds-bandcamp/bandcamp-album`
-- `mds-bandcamp/bandcamp-discography`
-- `mds-bandcamp/bandcamp-embed`
-- `mds-bandcamp/bandcamp-form`
-- `mds-bandcamp/bandcamp-merch`
-- `mds-bandcamp/bandcamp-miniplayer`
+1. Install and activate **MDS Release Manager**.
+2. Install this plugin into `wp-content/plugins/mds-audio-providers` and activate it (or **Network Activate** on Multisite).
+3. Open **Releases → Settings → Audio Providers** to:
+   - Reorder provider priority and toggle individual providers on or off.
+   - Toggle **"Allow iframe embed fallback"** per provider on **Bandcamp** and **Spotify**.
+   - Configure optional credentials (**SoundCloud**, **Spotify**, **TIDAL**, **Jamendo**, **Funkwhale**, or **Musicfetch**) and run live **Test Connection** checks.
+   - Inspect active cached provider lookups and selectively clear the provider transient cache.
+4. On individual **Release** edit screens (Hub site on Multisite):
+   - **Apple Music, Deezer, Spotify, TIDAL, and Musicfetch** resolve automatically from the release's **Barcode (UPC/EAN)**.
+   - The **Audio Providers** metabox conditionally displays fields **only for enabled URL-based providers** (Bandcamp, Audius, SoundCloud, Jamendo, Funkwhale, TIDAL, Mixcloud, Audiomack), and automatically detects matching URLs from Core's Release Links meta when present.
 
-Legacy `blocks-for-bandcamp/*` content is migrated and remains renderable.
+### `wp-config.php` Credential Overrides
 
-The Album, Miniplayer, and Merch blocks select their release through a
-searchable picker that lists published releases with a verified Bandcamp album
-(preloaded in memory via `window.mdsRmCatalog` when MDS Release Manager is
-active, or served by the editor-only `GET /mds-bandcamp/v1/releases` endpoint,
-requiring `edit_posts`). Matching delegates to the Release Manager search
-service, so terms match the release title or its artist's name, and options
-display as "Title — Artist". Picking a release copies its album ID and URL into
-the block, and a read-only snapshot field is shown when `WP_DEBUG` is enabled.
+All secrets stored in the database are encrypted at rest with AES-256-GCM (falling back to AES-256-CBC + HMAC-SHA256). You can also override any credential via `wp-config.php` constants:
 
-The Discography block (`mds-bandcamp/bandcamp-discography`) uses a searchable
-Artist picker (`window.mdsBcUseArtistPicker`) that lists published
-Artists with a configured **Bandcamp Artist URL** (set in the **Bandcamp
-Integration** meta box on the Artist edit screen and preloaded via the
-`mds_rm_artist_picker_item` filter). Leaving the Artist selection blank
-automatically resolves the current context (the current Artist page, or the
-linked Artist of the current Release). Appearance controls live in the editor's
-Styles tab.
+```php
+define( 'MDS_AP_SOUNDCLOUD_CLIENT_ID', '...' );
+define( 'MDS_AP_SOUNDCLOUD_CLIENT_SECRET', '...' );
 
-## Release Manager integration
+define( 'MDS_AP_SPOTIFY_CLIENT_ID', '...' );
+define( 'MDS_AP_SPOTIFY_CLIENT_SECRET', '...' );
 
-With MDS Release Manager active, the release editor's Bandcamp meta box saves a
-verified album URL and ID as `mds_bandcamp_integration` post meta (along with
-registered `bandcamp_album_id` and `bandcamp_album_url` release meta keys). The
-plugin registers **Bandcamp Album Player** in the **Audio Player Manager** tab
-under Releases → Settings (`mds_rm_register_audio_players`), exposing site-wide
-player size, height, background color, link/accent color, artwork, tracklist,
-and minimal-square controls. When Bandcamp is selected as the active player, it
-renders through the theme-overridable `frontend-widget.php` template for
-releases with a verified Bandcamp album and automatically falls back to the
-core HTML5 Player (`.mp3`) on releases without a Bandcamp album.
+define( 'MDS_AP_TIDAL_CLIENT_ID', '...' );
+define( 'MDS_AP_TIDAL_CLIENT_SECRET', '...' );
 
- In the block editor, the plugin enriches the preloaded Release Manager catalog
-(`mds_rm_release_picker_item`) with each release's Bandcamp `album_id`, `url`,
-and `subdomain` so the Album, Miniplayer, Merch, and Discography block pickers
-filter and search in memory without extra REST calls.
+define( 'MDS_AP_JAMENDO_CLIENT_ID', '...' );
 
-## Class Layout
+define( 'MDS_AP_FUNKWHALE_POD_URL', 'https://open.audio' );
+define( 'MDS_AP_FUNKWHALE_TOKEN', '...' ); // Optional, private pods only.
 
-Production classes use Composer PSR-4 autoloading under the `MDS\Bandcamp\` root namespace in `src/`:
+define( 'MDS_AP_MUSICFETCH_API_KEY', '...' ); // Optional BYO paid key.
+```
 
-- `src/Admin/`: `Admin` (Release/Artist meta boxes & AJAX verifier) and `AdminInterface` (settings page & MDS RM tab).
-- `src/Api/`: `BandcampApi` (Bandcamp page fetching & parsing) and `RestApi` (REST endpoint & catalog enrichment).
-- `src/Core/`: `Cache`, `Dependencies`, `Helpers`, `Logging`, `Templates`, and `Utilities`.
-- `src/Blocks/` and `blocks/`: block registration (`Blocks`) and the six block implementations.
-- `src/Frontend/`: `Frontend` (Audio Player Manager & Release Links filter) and `Assets` (script/style registration).
-- `templates/`, `css/`, and `js/`: frontend template fallback (`templates/frontend-widget.php`), plugin-owned admin meta-box view (`templates/admin/admin-settings.php`), and shared assets.
+## Architecture Summary
 
-The template loader checks `mds-bandcamp-integration/<template>` with WordPress
-`locate_template()`, which selects a child-theme override before a parent-theme
-override, then falls back to the plugin copy. The release/artist meta-box view is
-plugin-owned at `templates/admin/admin-settings.php`.
+- **Namespace & Autoloading:** PSR-4 under `MDS\AudioProviders\` mapped to `src/` via Composer (`vendor/autoload.php`).
+- **Blocks & Shortcodes:** This plugin intentionally registers **no standalone blocks or shortcodes**. All playback renders through MDS Release Manager's unified **Release Player** (`mds-rm/release-player` / `[release-player]`).
+- **Multilingual & Uninstall:** Includes `languages/mds-audio-providers.pot`, `wpml-config.xml` (`copy` rules for all provider URL/ID release meta), and `uninstall.php` (single-site and Multisite cleanup of plugin options and `mds_ap_*` transients while preserving Release post metadata).
 
-Stored options, post meta keys, block names (`mds-bandcamp/*`), `[bandcamp]`
-shortcode, and MDS Release Manager hook contracts are preserved for backwards
-compatibility. The entrypoint loads `vendor/autoload.php` and registers each
-hook-owning class once.
-
-## External services and data
-
-The plugin requests public Bandcamp pages over HTTPS from the WordPress server
-when a Bandcamp URL or artist/album identifier is used by a block, REST request,
-or the release meta-box verifier. Requests use the WordPress HTTP API. Bandcamp
-receives the site's server IP and request metadata; requested Bandcamp URLs and
-identifiers may also appear in the WordPress debug log when `WP_DEBUG` and
-`WP_DEBUG_LOG` are enabled.
-
-Successful API responses are stored as WordPress transients for the configured
-cache duration (60 minutes by default, configurable from 1 to 1440 minutes).
-The site's object-cache implementation may store transients outside the
-database. The settings page's Clear Cache action deletes this plugin's
-transients and flushes the site's object cache.
-
-When a Bandcamp player, shortcode, or embed is displayed, the visitor's browser
-loads the player from Bandcamp. The download-code form sends the entered code
-directly to Bandcamp at `https://www.bandcamp.com/yum`. Bandcamp may receive the
-visitor's IP address, browser request metadata, and submitted code in those
-browser requests. Review [Bandcamp's Privacy Policy](https://bandcamp.com/privacy)
-and [Terms of Use](https://bandcamp.com/terms_of_use) and disclose these
-connections in your site's privacy information.
-
-## Migration behavior
-
-Migrations run during administrator requests and use these WordPress options
-and post meta:
-
-- If `mds_bandcamp__settings` does not exist, the plugin copies
-  `gf_blocks_for_bandcamp__settings`; the old option is retained.
-- Legacy `bandcamp_shortcode` post meta is converted to
-  `mds_bandcamp_integration` when an album ID can be extracted. The old meta is
-  removed only after successful conversion. `mds_bandcamp_migration_complete`
-  is set after migration completes.
-- Legacy block names are updated in batches of 100. The
-  `mds_bandcamp_block_migration_cursor` option records progress and is removed
-  when the `mds_bandcamp_block_namespace_migrated` completion option is set.
-  Only block namespace comments are changed; serialized block attributes are
-  preserved.
-- The deprecated `mds_rm_bandcamp_template` option is removed after successful
-  legacy post-meta migration. An active standalone Blocks for Bandcamp plugin
-  is deactivated; its settings option is not deleted.
-
-## Development
-
-Install Composer dependencies (PSR-4 autoloader + WPCS/PHPCompatibilityWP):
+## Development Workflow (LocalWP & Composer)
 
 ```powershell
 composer install
 composer phpcs
+composer phpcbf
+php tests/providers.php
 ```
 
-Run the focused standalone suites from the plugin root:
+Run PHP syntax checks across all source files:
 
 ```powershell
-php tests/bootstrap.php
-php tests/logging.php
-php tests/native-api.php
-php tests/block-metadata.php
-php tests/block-defaults.php
-php tests/templates.php
-php tests/release-links-player.php
-php tests/releases-endpoint.php
+Get-ChildItem -Path src, tests, mds-audio-providers.php, uninstall.php -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
 ```
 
-Run PHP syntax checks across the plugin:
+Admin JS (`js/admin-settings.js`, `js/metabox-verify.js`) and CSS (`css/admin.css`) are shipped directly with no npm build step required.
 
-```powershell
-Get-ChildItem -Recurse -Filter *.php | ForEach-Object { php -l $_.FullName }
-```
+## Documentation
 
-The standalone fixtures do not replace a full oldest-supported-version
-WordPress activation/editor test. Distribution rights and a formal plugin
-license declaration must be confirmed before packaging for WordPress.org.
+- [User Manual](USER-MANUAL.md) — End-user and site-administrator guide.
+- [Changelog](changelog.md) — Full version history.
+- [Technical Blueprint](.agents/technical-blueprint.md) — Architecture, hooks, REST endpoints, and storage contracts.
+- [Streaming Providers Feasibility Study](.agents/research/streaming-providers-feasibility.md) — Ecosystem research and phased expansion roadmap.

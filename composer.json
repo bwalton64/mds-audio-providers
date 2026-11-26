@@ -1,7 +1,7 @@
 {
   "name": "mds/audio-providers",
-  "description": "MDS Audio Providers extension for MDS Release Manager (Apple Music, Deezer, Bandcamp, SoundCloud, Spotify).",
-  "version": "2.0.3",
+  "description": "MDS Audio Providers extension for MDS Release Manager (12 streaming audio preview providers).",
+  "version": "2.1.0",
   "type": "wordpress-plugin",
   "license": "GPL-2.0-or-later",
   "require": {

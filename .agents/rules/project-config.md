@@ -9,13 +9,13 @@ All global rules in `~/.gemini/config/rules/` resolve their plugin-specific toke
 
 | Variable                   | Value                                           |
 | :------------------------- | :---------------------------------------------- |
-| **Plugin Name**            | `MDS Bandcamp Integration`                      |
-| **Plugin Slug / Folder**   | `mds-bandcamp-integration`                      |
-| **Text Domain**            | `mds-bandcamp-integration`                      |
-| **PHP Root Namespace**     | `MDS\Bandcamp\`                                 |
-| **Global Class Prefix**    | `MDS_BC_`                                       |
-| **Function / Hook Prefix** | `mds_bc_`                                       |
-| **Constant Prefix**        | `MDS_BC_`                                       |
+| **Plugin Name**            | `MDS Audio Providers`                           |
+| **Plugin Slug / Folder**   | `mds-audio-providers`                           |
+| **Text Domain**            | `mds-audio-providers`                           |
+| **PHP Root Namespace**     | `MDS\AudioProviders\`                           |
+| **Global Class Prefix**    | `MDS_AP_`                                       |
+| **Function / Hook Prefix** | `mds_ap_`                                       |
+| **Constant Prefix**        | `MDS_AP_`                                       |
 | **Minimum WordPress**      | `7.0`                                           |
 | **Tested Up To WordPress** | `7.x`                                           |
 | **Minimum PHP**            | `8.0`                                           |

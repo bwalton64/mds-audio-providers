@@ -102,6 +102,9 @@ final class BandcampProvider implements AudioProviderInterface {
 		}
 
 		if ( null === $manifest ) {
+			if ( ! ProviderOptions::get_bool( 'bandcamp', 'embed_fallback', true ) ) {
+				return null;
+			}
 			// Safe final fallback: official Bandcamp EmbeddedPlayer iframe.
 			$iframe_src = sprintf(
 				'https://bandcamp.com/EmbeddedPlayer/album=%d/size=small/bgcol=ffffff/linkcol=2271b1/transparent=true/',
