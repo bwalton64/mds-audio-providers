@@ -122,7 +122,7 @@ final class MixcloudProvider implements AudioProviderInterface {
 			}
 		}
 
-		$embed_html = '<iframe width="100%" height="120" style="border:0;" src="' . esc_url( $iframe_src ) . '" allow="encrypted-media; fullscreen; autoplay; idle-detection; speaker-selection; web-share;" loading="lazy"></iframe>';
+		$embed_html = '<iframe title="' . esc_attr__( 'Mixcloud Audio Player', 'mds-audio-providers' ) . '" width="100%" height="120" style="border:0;" src="' . esc_url( $iframe_src ) . '" allow="encrypted-media; fullscreen; autoplay; idle-detection; speaker-selection; web-share;" loading="lazy"></iframe>';
 
 		$manifest = array(
 			'provider'       => $this->get_slug(),

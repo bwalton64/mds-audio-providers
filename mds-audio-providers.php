@@ -1,20 +1,25 @@
 <?php
 /**
  * Plugin Name: MDS Audio Providers
+ * Plugin URI: https://mustydungeon.com
  * Description: Audio preview providers (Apple Music, Deezer, Bandcamp, Audius, SoundCloud, Jamendo, Funkwhale, Spotify, TIDAL, Mixcloud, Audiomack, and Musicfetch) for MDS Release Manager's Unified Audio API.
- * Version: 2.1.0
+ * Version: 2.1.1
  * Requires at least: 7.0
  * Requires PHP: 8.0
  * Requires Plugins: mds-release-manager
  * Update URI: https://github.com/bwalton64/mds-audio-providers
  * Text Domain: mds-audio-providers
  * Author: Musty Dungeon Studios
+ * Author URI: https://mustydungeon.com
+ * License: GPL-3.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-3.0.html
  *
- * @category Core
- * @package  MDS\AudioProviders
- * @author   Musty Dungeon Studios <mds@briangwalton.com>
- * @copyright 2026 Walton International Business Group LLC
- * @link     https://mustydungeon.com
+ * @category  Core
+ * @package   MDS\AudioProviders
+ * @author    Musty Dungeon Studios <mds@briangwalton.com>
+ * @copyright 2026 Musty Dungeon Studios (Walton International Business Group LLC)
+ * @license   GPL-3.0-or-later
+ * @link      https://mustydungeon.com
  */
 
 declare(strict_types=1);
@@ -24,7 +29,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'MDS_AP_VERSION' ) ) {
-	define( 'MDS_AP_VERSION', '2.1.0' );
+	define( 'MDS_AP_VERSION', '2.1.1' );
 }
 if ( ! defined( 'MDS_AP_FILE' ) ) {
 	define( 'MDS_AP_FILE', __FILE__ );

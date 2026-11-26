@@ -16,6 +16,9 @@ $GLOBALS['mds_ap_meta']       = array();
 function __( string $text, string $_domain = '' ): string {
 	return $text;
 }
+function esc_attr__( string $text, string $_domain = '' ): string {
+	return htmlspecialchars( $text, ENT_QUOTES, 'UTF-8' );
+}
 function sanitize_key( string $key ): string {
 	return (string) preg_replace( '/[^a-z0-9_\-]/', '', strtolower( $key ) );
 }
@@ -184,6 +187,13 @@ $funkwhale = new FunkwhaleProvider();
 assert_ap( $funkwhale->supports_release( 52 ), 'FunkwhaleProvider should support public pod URL zero-auth.' );
 $fw_target = FunkwhaleProvider::get_funkwhale_target( 52 );
 assert_ap( is_array( $fw_target ) && 'album' === $fw_target['type'] && 'https://open.audio' === $fw_target['origin'] && '9876' === $fw_target['id'], 'FunkwhaleProvider should parse pod origin, type, and ID.' );
+assert_ap( FunkwhaleProvider::should_send_auth_token( 'https://open.audio', 'https://open.audio/' ), 'Funkwhale Bearer token should be sent to matching HTTPS pod origin.' );
+assert_ap( ! FunkwhaleProvider::should_send_auth_token( 'https://evil.example', 'https://open.audio' ), 'Funkwhale Bearer token must never be sent to mismatched host.' );
+assert_ap( ! FunkwhaleProvider::should_send_auth_token( 'https://open.audio', '' ), 'Funkwhale Bearer token must not be sent when Pod Base URL is empty.' );
+assert_ap( str_contains( (string) $sp_manifest['embedHtml'], 'title="Spotify Audio Player"' ), 'Spotify embed iframe should include accessible title.' );
+assert_ap( str_contains( (string) $tidal_manifest['embedHtml'], 'title="TIDAL Audio Player"' ), 'TIDAL embed iframe should include accessible title.' );
+assert_ap( str_contains( (string) $mc_manifest['embedHtml'], 'title="Mixcloud Audio Player"' ), 'Mixcloud embed iframe should include accessible title.' );
+assert_ap( str_contains( (string) $am_manifest['embedHtml'], 'title="Audiomack Audio Player"' ), 'Audiomack embed iframe should include accessible title.' );
 
 // 6b. Musicfetch encrypted secret-only API key and UPC support.
 $musicfetch = new MusicfetchProvider();

@@ -4,9 +4,9 @@ Tags: music, audio, preview, apple-music, deezer, bandcamp, soundcloud, spotify,
 Requires at least: 7.0
 Tested up to: 7.x
 Requires PHP: 8.0
-Stable tag: 2.1.0
-License: GPL-2.0-or-later
-License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
+Stable tag: 2.1.1
+License: GPLv3 or later
+License URI: https://www.gnu.org/licenses/gpl-3.0.html
 
 Twelve streaming audio preview providers (Apple Music, Deezer, Bandcamp, Audius, SoundCloud, Jamendo, Funkwhale, Spotify, TIDAL, Mixcloud, Audiomack, and Musicfetch) for MDS Release Manager's Unified Audio API and Release Player.
 
@@ -51,6 +51,12 @@ You can paste Bandcamp's Share/Embed `<iframe>` snippet directly into the **Band
 MDS Release Manager's core **Release Player** automatically falls back to the built-in HTML5 Audio Preview URL saved on the release.
 
 == Changelog ==
+
+= 2.1.1 =
+
+* Security: Scoped `FunkwhaleProvider` Bearer token transmission strictly to requests matching the configured HTTPS Pod Base URL origin.
+* Fixed Release metabox cache invalidation for `JamendoProvider` and `TidalProvider` (`type:id` cache keys) and cleared previous keys before saving updated URLs.
+* Added localized `title` attributes to official embed `<iframe>` players (`Bandcamp`, `Spotify`, `TIDAL`, `Mixcloud`, `Audiomack`), pruned unused legacy CSS in `css/admin.css`, updated licensing to `GPL-3.0-or-later` (`LICENSE` + `COMMERCIAL-LICENSE.md`), and added official plugin icons under `assets/`.
 
 = 2.1.0 =
 

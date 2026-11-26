@@ -1,9 +1,9 @@
 # MDS Audio Providers — User & Administrator Manual
 
 - **Plugin:** MDS Audio Providers
-- **Version:** `2.1.0`
+- **Version:** `2.1.1`
 - **Requires:** WordPress `7.0+` (tested up to `7.x`), PHP `8.0+`, **MDS Release Manager** (Unified Audio API)
-- **License:** GPL-2.0-or-later
+- **License:** GPL-3.0-or-later (commercial license available in `COMMERCIAL-LICENSE.md`)
 
 ## Table of Contents
 
@@ -57,7 +57,7 @@ flowchart LR
 ### Single-Site Installation
 
 1. Ensure **MDS Release Manager** is installed and active.
-2. In WordPress Admin, go to **Plugins → Add New → Upload Plugin** and upload `mds-audio-providers-2.1.0.zip`.
+2. In WordPress Admin, go to **Plugins → Add New → Upload Plugin** and upload `mds-audio-providers-2.1.1.zip`.
 3. Click **Activate Plugin**.
 4. Navigate to **Releases → Settings → Audio Providers**.
 

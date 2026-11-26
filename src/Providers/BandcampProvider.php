@@ -117,7 +117,7 @@ final class BandcampProvider implements AudioProviderInterface {
 				'sourceUrl'      => $album_url,
 				'isTimedPreview' => false,
 				'ttl'            => self::STREAM_TTL,
-				'embedHtml'      => '<iframe style="border:0;width:100%;height:42px;" src="' . esc_url( $iframe_src ) . '" seamless></iframe>',
+				'embedHtml'      => '<iframe title="' . esc_attr__( 'Bandcamp Audio Player', 'mds-audio-providers' ) . '" style="border:0;width:100%;height:42px;" src="' . esc_url( $iframe_src ) . '" seamless></iframe>',
 				'tracks'         => array(),
 			);
 		}

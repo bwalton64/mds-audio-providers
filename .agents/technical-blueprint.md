@@ -4,7 +4,7 @@
 
 - **Plugin Name:** `MDS Audio Providers`
 - **Plugin Slug / Text Domain:** `mds-audio-providers`
-- **Version:** `2.1.0`
+- **Version:** `2.1.1`
 - **PHP Root Namespace:** `MDS\AudioProviders\` (Composer PSR-4 autoloaded from `src/` via `vendor/autoload.php`)
 - **Prefixes:** `MDS_AP_` (constants; legacy `MDS_BC_VERSION`, `MDS_BC_PATH`, `MDS_BC_URL` aliases preserved), `mds_ap_` (options, transients, nonces, meta), `mds-ap-` (admin script/style handles; `mds-bc-metabox` and `mds_bc_verify_url` retained for metabox compatibility)
 - **Compatibility:** WordPress `7.0+` (`Tested up to: 7.x`), PHP `8.0+`

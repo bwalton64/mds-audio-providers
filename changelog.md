@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-11-26
+
+### Changed
+- Updated plugin licensing to `GPL-3.0-or-later` (`LICENSE` + `COMMERCIAL-LICENSE.md`) and added official Musty Dungeon Studios plugin icons under `assets/`.
+
+### Security
+- Scoped `FunkwhaleProvider` Bearer token transmission (`FunkwhaleProvider::should_send_auth_token()`) strictly to requests matching the configured HTTPS Pod Base URL origin, preventing token leakage to third-party hosts.
+
+### Fixed
+- Aligned `Admin::save_release_meta()` cache invalidation (`Admin::invalidate_provider_url_cache()`) with `JamendoProvider` and `TidalProvider` `type:id` cache keys and invalidated previous keys before saving updated URLs.
+- Added localized `title` attributes to official embed `<iframe>` outputs across `BandcampProvider`, `SpotifyProvider`, `TidalProvider`, `MixcloudProvider`, and `AudiomackProvider`, pruned unused legacy `.mds-bc-admin-app*` rules from `css/admin.css`, and synced the `GPL-3.0-or-later` license reference in `USER-MANUAL.md`.
+
 ## [2.1.0] - 2026-11-26
 
 ### Added

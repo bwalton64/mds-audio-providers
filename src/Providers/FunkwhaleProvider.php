@@ -91,7 +91,7 @@ final class FunkwhaleProvider implements AudioProviderInterface {
 
 		$creds   = Credentials::get( 'funkwhale' );
 		$headers = array( 'Accept' => 'application/json' );
-		if ( '' !== $creds['client_secret'] ) {
+		if ( '' !== $creds['client_secret'] && self::should_send_auth_token( $target['origin'], $creds['client_id'] ) ) {
 			$headers['Authorization'] = 'Bearer ' . $creds['client_secret'];
 		}
 
@@ -276,6 +276,33 @@ final class FunkwhaleProvider implements AudioProviderInterface {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * Determines whether the configured Funkwhale Bearer token may be sent to `$target_origin`.
+	 *
+	 * Prevents leaking a private pod's Bearer token to unrelated third-party hosts by
+	 * requiring an exact HTTPS origin match against the configured Pod Base URL.
+	 *
+	 * @param string $target_origin      Resolved target origin (`https://host[:port]`).
+	 * @param string $configured_pod_url Configured Funkwhale Pod Base URL.
+	 * @return bool True only when both origins are valid HTTPS and match.
+	 */
+	public static function should_send_auth_token( string $target_origin, string $configured_pod_url ): bool {
+		$pod_url = rtrim( esc_url_raw( trim( $configured_pod_url ) ), '/' );
+		if ( '' === $target_origin || '' === $pod_url ) {
+			return false;
+		}
+		$parsed = wp_parse_url( $pod_url );
+		if (
+			empty( $parsed['scheme'] )
+			|| 'https' !== strtolower( (string) $parsed['scheme'] )
+			|| empty( $parsed['host'] )
+		) {
+			return false;
+		}
+		$configured_origin = 'https://' . $parsed['host'] . ( ! empty( $parsed['port'] ) ? ':' . (int) $parsed['port'] : '' );
+		return 0 === strcasecmp( $target_origin, $configured_origin );
 	}
 
 	/**

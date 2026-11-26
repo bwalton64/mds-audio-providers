@@ -405,13 +405,53 @@ final class Admin {
 			if ( ! isset( $_POST[ $meta_key ] ) ) {
 				continue;
 			}
+
+			// Invalidate any previously cached entry for this provider before updating meta.
+			self::invalidate_provider_url_cache( $post_id, $provider_slug );
+
 			$url = esc_url_raw( wp_unslash( (string) $_POST[ $meta_key ] ) );
 			if ( '' !== $url ) {
 				update_post_meta( $post_id, $meta_key, $url );
-				Cache::delete( $provider_slug, $url );
+				self::invalidate_provider_url_cache( $post_id, $provider_slug );
 			} else {
 				delete_post_meta( $post_id, $meta_key );
 			}
+		}
+	}
+
+	/**
+	 * Invalidates the provider-specific transient cache key matching how each provider indexes its cache.
+	 *
+	 * @param int    $post_id       Release post ID.
+	 * @param string $provider_slug Provider slug.
+	 * @return void
+	 */
+	private static function invalidate_provider_url_cache( int $post_id, string $provider_slug ): void {
+		if ( 'jamendo' === $provider_slug ) {
+			$target = JamendoProvider::get_jamendo_target( $post_id );
+			if ( null !== $target ) {
+				Cache::delete( 'jamendo', $target['type'] . ':' . $target['id'] );
+			}
+			return;
+		}
+		if ( 'tidal' === $provider_slug ) {
+			$target = TidalProvider::get_tidal_target( $post_id );
+			if ( null !== $target ) {
+				Cache::delete( 'tidal', $target['type'] . ':' . $target['id'] );
+			}
+			return;
+		}
+
+		$current_url = match ( $provider_slug ) {
+			'soundcloud' => SoundCloudProvider::get_soundcloud_url( $post_id ),
+			'audius'     => AudiusProvider::get_audius_url( $post_id ),
+			'funkwhale'  => FunkwhaleProvider::get_funkwhale_url( $post_id ),
+			'mixcloud'   => MixcloudProvider::get_mixcloud_url( $post_id ),
+			'audiomack'  => AudiomackProvider::get_audiomack_url( $post_id ),
+			default      => '',
+		};
+		if ( '' !== $current_url ) {
+			Cache::delete( $provider_slug, $current_url );
 		}
 	}
 

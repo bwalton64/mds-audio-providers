@@ -239,7 +239,7 @@ final class SpotifyProvider implements AudioProviderInterface {
 			'sourceUrl'      => '' !== $source_url ? $source_url : sprintf( 'https://open.spotify.com/%s/%s', $clean_type, $clean_id ),
 			'isTimedPreview' => true,
 			'ttl'            => self::CACHE_TTL,
-			'embedHtml'      => '<iframe style="border:0;border-radius:12px;width:100%;height:' . (int) $height . 'px;" src="' . esc_url( $iframe_src ) . '" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>',
+			'embedHtml'      => '<iframe title="' . esc_attr__( 'Spotify Audio Player', 'mds-audio-providers' ) . '" style="border:0;border-radius:12px;width:100%;height:' . (int) $height . 'px;" src="' . esc_url( $iframe_src ) . '" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>',
 			'tracks'         => array(),
 		);
 	}

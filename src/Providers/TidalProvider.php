@@ -241,7 +241,7 @@ final class TidalProvider implements AudioProviderInterface {
 			'sourceUrl'      => '' !== $source_url ? $source_url : sprintf( 'https://tidal.com/browse/%s/%s', $type, $clean_id ),
 			'isTimedPreview' => true,
 			'ttl'            => self::CACHE_TTL,
-			'embedHtml'      => '<iframe src="' . esc_url( $iframe_src ) . '" width="100%" height="' . (int) $config['height'] . '" style="border:0;" allow="encrypted-media; fullscreen; clipboard-write; web-share" loading="lazy"></iframe>',
+			'embedHtml'      => '<iframe title="' . esc_attr__( 'TIDAL Audio Player', 'mds-audio-providers' ) . '" src="' . esc_url( $iframe_src ) . '" width="100%" height="' . (int) $config['height'] . '" style="border:0;" allow="encrypted-media; fullscreen; clipboard-write; web-share" loading="lazy"></iframe>',
 			'tracks'         => array(),
 		);
 	}

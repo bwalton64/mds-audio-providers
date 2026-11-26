@@ -92,7 +92,7 @@ final class AudiomackProvider implements AudioProviderInterface {
 		}
 
 		$height     = 'song' === $embed_info['type'] ? 252 : 352;
-		$embed_html = '<iframe src="' . esc_url( $embed_info['embed_url'] ) . '" scrolling="no" width="100%" height="' . (int) $height . '" style="border:0;" allow="autoplay; encrypted-media; fullscreen" loading="lazy"></iframe>';
+		$embed_html = '<iframe title="' . esc_attr__( 'Audiomack Audio Player', 'mds-audio-providers' ) . '" src="' . esc_url( $embed_info['embed_url'] ) . '" scrolling="no" width="100%" height="' . (int) $height . '" style="border:0;" allow="autoplay; encrypted-media; fullscreen" loading="lazy"></iframe>';
 
 		$manifest = array(
 			'provider'       => $this->get_slug(),
