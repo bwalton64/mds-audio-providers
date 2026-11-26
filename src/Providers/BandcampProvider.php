@@ -352,9 +352,11 @@ final class BandcampProvider implements AudioProviderInterface {
 		$response = wp_safe_remote_get(
 			$url,
 			array(
-				'timeout' => 10,
+				'timeout' => 12,
 				'headers' => array(
-					'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+					'User-Agent'      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+					'Accept'          => 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+					'Accept-Language' => 'en-US,en;q=0.9',
 				),
 			)
 		);
@@ -367,6 +369,17 @@ final class BandcampProvider implements AudioProviderInterface {
 		}
 
 		$code = (int) wp_remote_retrieve_response_code( $response );
+		$body = (string) wp_remote_retrieve_body( $response );
+		if ( 403 === $code || 429 === $code || 503 === $code ) {
+			return array(
+				'error'   => true,
+				'message' => sprintf(
+					/* translators: %d: HTTP status code. */
+					__( 'Bandcamp blocked this server’s request (HTTP %d). You can paste the Bandcamp Embed code or enter the Bandcamp Album ID manually below.', 'mds-audio-providers' ),
+					$code
+				),
+			);
+		}
 		if ( 200 !== $code ) {
 			return array(
 				'error'   => true,
@@ -377,7 +390,17 @@ final class BandcampProvider implements AudioProviderInterface {
 				),
 			);
 		}
+		if (
+			str_contains( $body, 'cf-browser-verification' )
+			|| str_contains( $body, 'challenge-platform' )
+			|| preg_match( '/<title>\s*Just a moment/i', $body )
+		) {
+			return array(
+				'error'   => true,
+				'message' => __( 'Bandcamp served a bot-protection challenge to this server’s IP. Paste the Bandcamp Embed code or enter the Bandcamp Album ID manually below.', 'mds-audio-providers' ),
+			);
+		}
 
-		return (string) wp_remote_retrieve_body( $response );
+		return $body;
 	}
 }

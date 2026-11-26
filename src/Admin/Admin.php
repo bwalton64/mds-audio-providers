@@ -155,10 +155,11 @@ final class Admin {
 							name="mds_bc_album_id"
 							value="<?php echo $bc_album_id > 0 ? esc_attr( (string) $bc_album_id ) : ''; ?>"
 							class="regular-text"
-							readonly
+							min="1"
+							placeholder="<?php esc_attr_e( 'e.g. 3456789012', 'mds-audio-providers' ); ?>"
 						/>
 						<p class="mds-style-field__help">
-							<?php esc_html_e( 'Populated automatically when you verify a Bandcamp album URL.', 'mds-audio-providers' ); ?>
+							<?php esc_html_e( 'Populated automatically by Verify URL. If your web host is blocked by Bandcamp, paste Bandcamp’s Share/Embed code into the URL field or enter the numeric album ID manually.', 'mds-audio-providers' ); ?>
 						</p>
 					</div>
 				</div>
@@ -321,6 +322,18 @@ final class Admin {
 		}
 		if ( preg_match( '/<!--\s*album\s+id\s+(\d+)\s*-->/i', $html, $matches ) ) {
 			return absint( $matches[1] );
+		}
+		if ( preg_match( '/&quot;item_id&quot;\s*:\s*(\d+)/i', $html, $matches ) ) {
+			$id = absint( $matches[1] );
+			if ( $id > 0 ) {
+				return $id;
+			}
+		}
+		if ( preg_match( '/"album_id"\s*:\s*(\d+)/i', $html, $matches ) ) {
+			$id = absint( $matches[1] );
+			if ( $id > 0 ) {
+				return $id;
+			}
 		}
 
 		libxml_use_internal_errors( true );

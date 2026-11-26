@@ -2,7 +2,7 @@
 /**
  * Plugin Name: MDS Audio Providers
  * Description: Audio preview providers (Apple Music, Deezer, Bandcamp, SoundCloud, Spotify) for MDS Release Manager's Unified Audio API.
- * Version: 2.0.0
+ * Version: 2.0.3
  * Requires at least: 7.0
  * Requires PHP: 8.0
  * Requires Plugins: mds-release-manager
@@ -24,7 +24,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 if ( ! defined( 'MDS_AP_VERSION' ) ) {
-	define( 'MDS_AP_VERSION', '2.0.0' );
+	define( 'MDS_AP_VERSION', '2.0.3' );
 }
 if ( ! defined( 'MDS_AP_FILE' ) ) {
 	define( 'MDS_AP_FILE', __FILE__ );

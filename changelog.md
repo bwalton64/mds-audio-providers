@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [2.0.3] - 2026-11-25
+
+### Fixed
+- Hardened Bandcamp URL verification (`BandcampProvider::fetch_page_html()`, `Admin::extract_album_id()`) with full browser headers, explicit HTTP 403/429/503 and Cloudflare bot-challenge detection, and `bc-page-properties` / `"album_id"` JSON fallback extractors.
+- Enabled manual Bandcamp Album ID entry (`src/Admin/Admin.php`) and client-side Bandcamp Share/Embed snippet parsing (`js/metabox-verify.js`, with `.text()` status escaping) so admins can still link albums when a hosting datacenter IP is blocked by Bandcamp.
+
 ## [2.0.0] - 2026-11-25
 
 ### Added

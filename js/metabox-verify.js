@@ -78,6 +78,11 @@
 			syncBuyNowButtonState();
 
 			$urlInput.on('input change', function () {
+				tryExtractEmbedSnippet();
+				syncBuyNowButtonState();
+			});
+
+			$albumIdInput.on('input change', function () {
 				syncBuyNowButtonState();
 			});
 
@@ -155,7 +160,29 @@
 			});
 		}
 
+		function tryExtractEmbedSnippet() {
+			const raw = String($urlInput.val() || '').trim();
+			const albumMatch = raw.match(/album=(\d{5,})/i);
+			if (!albumMatch) {
+				return false;
+			}
+			const extractedId = albumMatch[1];
+			$albumIdInput.val(extractedId);
+
+			const linkMatch = raw.match(/https?:\/\/[a-z0-9.-]+\.bandcamp\.com\/(?:album|track)\/[^\s"'<>]+/i);
+			if (linkMatch) {
+				$urlInput.val(linkMatch[0]);
+			}
+			showStatus('success', 'Album ID extracted from Bandcamp embed code: ' + extractedId);
+			syncBuyNowButtonState();
+			return true;
+		}
+
 		$verifyBtn.on('click', function () {
+			if (tryExtractEmbedSnippet()) {
+				return;
+			}
+
 			const url = $urlInput.val().trim();
 
 			if (!url) {
@@ -208,9 +235,10 @@
 				$statusDiv.addClass('error notice-error');
 			}
 
-			$statusDiv
-				.html('<p><strong>' + (type === 'success' ? '✓ ' : '✗ ') + message + '</strong></p>')
-				.slideDown();
+			const $p = $('<p />');
+			const $strong = $('<strong />').text((type === 'success' ? '✓ ' : '✗ ') + message);
+			$p.append($strong);
+			$statusDiv.empty().append($p).slideDown();
 
 			// Auto-hide success messages after 5 seconds.
 			if ('success' === type) {

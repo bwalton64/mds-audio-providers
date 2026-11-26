@@ -4,7 +4,7 @@ Tags: music, audio, preview, apple-music, deezer, bandcamp, soundcloud, spotify
 Requires at least: 7.0
 Tested up to: 7.x
 Requires PHP: 8.0
-Stable tag: 2.0.0
+Stable tag: 2.0.3
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/old-licenses/gpl-2.0.html
 
@@ -40,6 +40,11 @@ No. Apple Music and Deezer resolve previews automatically from each release's UP
 MDS Release Manager's core **Release Player** automatically falls back to the built-in HTML5 Audio Preview (`.mp3`) URL saved on the release.
 
 == Changelog ==
+
+= 2.0.3 =
+
+* Hardened Bandcamp URL verification (`BandcampProvider::fetch_page_html()` & `Admin::extract_album_id()`) with full browser headers, Cloudflare/bot-challenge detection, and `bc-page-properties` / `"album_id"` JSON fallback extractors.
+* Enabled manual Bandcamp Album ID entry and client-side Bandcamp Share/Embed `<iframe>` snippet parsing in `js/metabox-verify.js` when a hosting server's IP is rate-limited by Bandcamp.
 
 = 2.0.0 =
 
