@@ -128,7 +128,7 @@ final class AdminInterface {
 	 * @return void
 	 */
 	public static function enqueue_assets( string $hook_suffix ): void {
-		$is_rm_settings = 'release_page_mds-release-settings' === $hook_suffix;
+		$is_rm_settings = str_ends_with( $hook_suffix, '_page_mds-release-settings' );
 		$is_standalone  = '' !== self::$hook_suffix && $hook_suffix === self::$hook_suffix;
 		if ( ! $is_rm_settings && ! $is_standalone ) {
 			return;

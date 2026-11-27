@@ -73,15 +73,245 @@ final class Credentials {
 	);
 
 	/**
-	 * Retrieves decrypted credentials for a provider.
+	 * Registers audio provider schemas with MDS Release Manager's centralized Credentials page.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @return void
+	 */
+	public static function register_hooks(): void {
+		add_filter( 'mds_rm_register_secret_schemas', array( self::class, 'register_secret_schemas' ) );
+	}
+
+	/**
+	 * Registers SoundCloud, Spotify, TIDAL, Jamendo, Funkwhale, and Musicfetch schemas.
+	 *
+	 * Canonical namespaces (`spotify`, `musicfetch`) merge automatically with sibling plugins.
+	 *
+	 * @since 2.2.0
+	 *
+	 * @param array<string, array<string, mixed>> $schemas Existing schemas.
+	 * @return array<string, array<string, mixed>> Updated schemas.
+	 */
+	public static function register_secret_schemas( array $schemas ): array {
+		$plugin = __( 'MDS Audio Providers', 'mds-audio-providers' );
+
+		$schemas['soundcloud'] = array(
+			'namespace'     => 'soundcloud',
+			'label'         => __( 'SoundCloud', 'mds-audio-providers' ),
+			'description'   => __( 'OAuth 2.1 Client Credentials for SoundCloud track and playlist previews.', 'mds-audio-providers' ),
+			'plugin'        => $plugin,
+			'docs_url'      => 'https://soundcloud.com/you/apps',
+			'test_callback' => array( SoundCloudProvider::class, 'test_connection' ),
+			'fields'        => array(
+				'client_id'     => array(
+					'label'     => __( 'SoundCloud Client ID', 'mds-audio-providers' ),
+					'is_secret' => false,
+					'const'     => array( 'MDS_AP_SOUNDCLOUD_CLIENT_ID' ),
+					'env'       => array( 'MDS_AP_SOUNDCLOUD_CLIENT_ID' ),
+				),
+				'client_secret' => array(
+					'label'     => __( 'SoundCloud Client Secret', 'mds-audio-providers' ),
+					'is_secret' => true,
+					'const'     => array( 'MDS_AP_SOUNDCLOUD_CLIENT_SECRET' ),
+					'env'       => array( 'MDS_AP_SOUNDCLOUD_CLIENT_SECRET' ),
+				),
+			),
+		);
+
+		$schemas['spotify'] = array(
+			'namespace'     => 'spotify',
+			'label'         => __( 'Spotify', 'mds-audio-providers' ),
+			'description'   => __( 'OAuth 2.0 Client Credentials shared across MDS Audio Providers and MDS Metadata.', 'mds-audio-providers' ),
+			'plugin'        => $plugin,
+			'docs_url'      => 'https://developer.spotify.com/dashboard',
+			'test_callback' => array( SpotifyProvider::class, 'test_connection' ),
+			'fields'        => array(
+				'client_id'     => array(
+					'label'     => __( 'Spotify Client ID', 'mds-audio-providers' ),
+					'is_secret' => false,
+					'const'     => array( 'MDS_AP_SPOTIFY_CLIENT_ID' ),
+					'env'       => array( 'MDS_AP_SPOTIFY_CLIENT_ID' ),
+				),
+				'client_secret' => array(
+					'label'     => __( 'Spotify Client Secret', 'mds-audio-providers' ),
+					'is_secret' => true,
+					'const'     => array( 'MDS_AP_SPOTIFY_CLIENT_SECRET' ),
+					'env'       => array( 'MDS_AP_SPOTIFY_CLIENT_SECRET' ),
+				),
+			),
+		);
+
+		$schemas['tidal'] = array(
+			'namespace'     => 'tidal',
+			'label'         => __( 'TIDAL', 'mds-audio-providers' ),
+			'description'   => __( 'OAuth 2.0 Client Credentials for TIDAL Open API v2 UPC album lookups.', 'mds-audio-providers' ),
+			'plugin'        => $plugin,
+			'docs_url'      => 'https://developer.tidal.com/',
+			'test_callback' => array( TidalProvider::class, 'test_connection' ),
+			'fields'        => array(
+				'client_id'     => array(
+					'label'     => __( 'TIDAL Client ID', 'mds-audio-providers' ),
+					'is_secret' => false,
+					'const'     => array( 'MDS_AP_TIDAL_CLIENT_ID' ),
+					'env'       => array( 'MDS_AP_TIDAL_CLIENT_ID' ),
+				),
+				'client_secret' => array(
+					'label'     => __( 'TIDAL Client Secret', 'mds-audio-providers' ),
+					'is_secret' => true,
+					'const'     => array( 'MDS_AP_TIDAL_CLIENT_SECRET' ),
+					'env'       => array( 'MDS_AP_TIDAL_CLIENT_SECRET' ),
+				),
+			),
+		);
+
+		$schemas['jamendo'] = array(
+			'namespace'     => 'jamendo',
+			'label'         => __( 'Jamendo', 'mds-audio-providers' ),
+			'description'   => __( 'Free Jamendo API v3.0 Client ID for direct MP3 streams.', 'mds-audio-providers' ),
+			'plugin'        => $plugin,
+			'docs_url'      => 'https://devportal.jamendo.com/',
+			'test_callback' => array( JamendoProvider::class, 'test_connection' ),
+			'fields'        => array(
+				'client_id' => array(
+					'label'     => __( 'Jamendo Client ID', 'mds-audio-providers' ),
+					'is_secret' => false,
+					'const'     => array( 'MDS_AP_JAMENDO_CLIENT_ID' ),
+					'env'       => array( 'MDS_AP_JAMENDO_CLIENT_ID' ),
+				),
+			),
+		);
+
+		$schemas['funkwhale'] = array(
+			'namespace'     => 'funkwhale',
+			'label'         => __( 'Funkwhale', 'mds-audio-providers' ),
+			'description'   => __( 'Optional Pod Base URL and Bearer token for private Funkwhale pods.', 'mds-audio-providers' ),
+			'plugin'        => $plugin,
+			'test_callback' => array( FunkwhaleProvider::class, 'test_connection' ),
+			'fields'        => array(
+				'client_id'     => array(
+					'label'       => __( 'Funkwhale Pod Base URL', 'mds-audio-providers' ),
+					'placeholder' => 'https://open.audio',
+					'is_secret'   => false,
+					'const'       => array( 'MDS_AP_FUNKWHALE_POD_URL' ),
+					'env'         => array( 'MDS_AP_FUNKWHALE_POD_URL' ),
+				),
+				'client_secret' => array(
+					'label'     => __( 'Funkwhale Bearer Token (optional)', 'mds-audio-providers' ),
+					'is_secret' => true,
+					'const'     => array( 'MDS_AP_FUNKWHALE_TOKEN' ),
+					'env'       => array( 'MDS_AP_FUNKWHALE_TOKEN' ),
+				),
+			),
+		);
+
+		$schemas['musicfetch'] = array(
+			'namespace'     => 'musicfetch',
+			'label'         => __( 'Musicfetch', 'mds-audio-providers' ),
+			'description'   => __( 'Optional commercial multi-DSP API key (x-token) shared across MDS Audio Providers and MDS Metadata.', 'mds-audio-providers' ),
+			'plugin'        => $plugin,
+			'docs_url'      => 'https://musicfetch.io/',
+			'test_callback' => array( MusicfetchProvider::class, 'test_connection' ),
+			'fields'        => array(
+				'api_key' => array(
+					'label'     => __( 'Musicfetch API Key (x-token)', 'mds-audio-providers' ),
+					'is_secret' => true,
+					'const'     => array( 'MDS_AP_MUSICFETCH_API_KEY' ),
+					'env'       => array( 'MDS_AP_MUSICFETCH_API_KEY' ),
+				),
+			),
+		);
+
+		return $schemas;
+	}
+
+	/**
+	 * Checks whether Core's centralized Hub SecretVault facade is available.
+	 *
+	 * @return bool True when `ExtensionApi::get_secret_with_meta()` is loaded.
+	 */
+	private static function has_core_vault(): bool {
+		return class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class )
+			&& method_exists( \MDS\ReleaseManager\Api\ExtensionApi::class, 'get_secret_with_meta' );
+	}
+
+	/**
+	 * Retrieves decrypted credentials for a provider (delegating to Core's Hub SecretVault when available).
 	 *
 	 * @param string $provider Provider slug (`soundcloud`, `spotify`, `tidal`, `jamendo`, `funkwhale`, `musicfetch`).
 	 * @return array{client_id: string, client_secret: string, source: string}
 	 */
 	public static function get( string $provider ): array {
 		$slug = sanitize_key( $provider );
+		$spec = self::CONSTANTS[ $slug ] ?? null;
+
+		if ( null !== $spec && self::has_core_vault() ) {
+			$secret_only  = ! empty( $spec['secret_only'] );
+			$secret_field = 'musicfetch' === $slug ? 'api_key' : 'client_secret';
+
+			$id_meta = ! $secret_only
+				? \MDS\ReleaseManager\Api\ExtensionApi::get_secret_with_meta(
+					$slug,
+					'client_id',
+					array(
+						'const' => '' !== $spec['client_id'] ? array( $spec['client_id'] ) : array(),
+						'env'   => '' !== $spec['client_id'] ? array( $spec['client_id'] ) : array(),
+					)
+				)
+				: array(
+					'value'  => '',
+					'source' => 'none',
+				);
+
+			$sec_meta = \MDS\ReleaseManager\Api\ExtensionApi::get_secret_with_meta(
+				$slug,
+				$secret_field,
+				array(
+					'const' => '' !== $spec['client_secret'] ? array( $spec['client_secret'] ) : array(),
+					'env'   => '' !== $spec['client_secret'] ? array( $spec['client_secret'] ) : array(),
+				)
+			);
+
+			$cid = $id_meta['value'];
+			$sec = $sec_meta['value'];
+
+			// Auto-migrate any legacy stored option value into the Hub vault on first read.
+			if ( '' === $cid && '' === $sec ) {
+				$legacy = self::read_legacy_option( $slug );
+				if ( '' !== $legacy['client_id'] || '' !== $legacy['client_secret'] ) {
+					if ( '' !== $legacy['client_id'] && ! $secret_only ) {
+						\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, 'client_id', $legacy['client_id'] );
+						$cid               = $legacy['client_id'];
+						$id_meta['source'] = 'vault';
+					}
+					if ( '' !== $legacy['client_secret'] ) {
+						\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, $secret_field, $legacy['client_secret'] );
+						$sec                = $legacy['client_secret'];
+						$sec_meta['source'] = 'vault';
+					}
+					self::delete_legacy_option_entry( $slug );
+				}
+			}
+
+			$is_configured = $secret_only
+				? '' !== $sec
+				: ( '' !== $cid && ( ! $spec['require_secret'] || '' !== $sec ) );
+
+			$source = 'none';
+			if ( $is_configured ) {
+				$source = $secret_only
+					? $sec_meta['source']
+					: ( 'none' !== $id_meta['source'] ? $id_meta['source'] : $sec_meta['source'] );
+			}
+
+			return array(
+				'client_id'     => $cid,
+				'client_secret' => $sec,
+				'source'        => $source,
+			);
+		}
+
 		if ( isset( self::CONSTANTS[ $slug ] ) ) {
-			$spec         = self::CONSTANTS[ $slug ];
 			$secret_only  = ! empty( $spec['secret_only'] );
 			$id_const     = $spec['client_id'];
 			$secret_const = $spec['client_secret'];
@@ -109,33 +339,59 @@ final class Credentials {
 			}
 		}
 
+		$legacy         = self::read_legacy_option( $slug );
+		$secret_only    = isset( self::CONSTANTS[ $slug ] ) && ! empty( self::CONSTANTS[ $slug ]['secret_only'] );
+		$require_secret = isset( self::CONSTANTS[ $slug ] ) ? self::CONSTANTS[ $slug ]['require_secret'] : true;
+		$is_configured  = $secret_only
+			? '' !== $legacy['client_secret']
+			: ( '' !== $legacy['client_id'] && ( ! $require_secret || '' !== $legacy['client_secret'] ) );
+
+		return array(
+			'client_id'     => $legacy['client_id'],
+			'client_secret' => $legacy['client_secret'],
+			'source'        => $is_configured ? 'option' : 'none',
+		);
+	}
+
+	/**
+	 * Reads a legacy entry from `mds_ap_credentials`.
+	 *
+	 * @param string $slug Provider slug.
+	 * @return array{client_id: string, client_secret: string}
+	 */
+	private static function read_legacy_option( string $slug ): array {
 		$stored = function_exists( 'get_option' ) ? get_option( self::OPTION_NAME, array() ) : array();
 		if ( ! is_array( $stored ) || ! isset( $stored[ $slug ] ) || ! is_array( $stored[ $slug ] ) ) {
 			return array(
 				'client_id'     => '',
 				'client_secret' => '',
-				'source'        => 'none',
 			);
 		}
-
-		$client_id     = isset( $stored[ $slug ]['client_id'] ) && is_string( $stored[ $slug ]['client_id'] )
-			? trim( $stored[ $slug ]['client_id'] )
-			: '';
-		$client_secret = isset( $stored[ $slug ]['client_secret'] ) && is_string( $stored[ $slug ]['client_secret'] )
-			? self::decrypt( $stored[ $slug ]['client_secret'] )
-			: '';
-
-		$secret_only    = isset( self::CONSTANTS[ $slug ] ) && ! empty( self::CONSTANTS[ $slug ]['secret_only'] );
-		$require_secret = isset( self::CONSTANTS[ $slug ] ) ? self::CONSTANTS[ $slug ]['require_secret'] : true;
-		$is_configured  = $secret_only
-			? '' !== $client_secret
-			: ( '' !== $client_id && ( ! $require_secret || '' !== $client_secret ) );
-
 		return array(
-			'client_id'     => $client_id,
-			'client_secret' => $client_secret,
-			'source'        => $is_configured ? 'option' : 'none',
+			'client_id'     => isset( $stored[ $slug ]['client_id'] ) && is_string( $stored[ $slug ]['client_id'] )
+				? trim( $stored[ $slug ]['client_id'] )
+				: '',
+			'client_secret' => isset( $stored[ $slug ]['client_secret'] ) && is_string( $stored[ $slug ]['client_secret'] )
+				? self::decrypt( $stored[ $slug ]['client_secret'] )
+				: '',
 		);
+	}
+
+	/**
+	 * Deletes a migrated entry from the legacy `mds_ap_credentials` option.
+	 *
+	 * @param string $slug Provider slug.
+	 * @return void
+	 */
+	private static function delete_legacy_option_entry( string $slug ): void {
+		if ( ! function_exists( 'get_option' ) || ! function_exists( 'update_option' ) ) {
+			return;
+		}
+		$stored = get_option( self::OPTION_NAME, array() );
+		if ( is_array( $stored ) && isset( $stored[ $slug ] ) ) {
+			unset( $stored[ $slug ] );
+			update_option( self::OPTION_NAME, $stored, false );
+		}
 	}
 
 	/**
@@ -176,7 +432,38 @@ final class Credentials {
 	 */
 	public static function save( string $provider, string $client_id, string $client_secret = '', bool $clear = false ): bool {
 		$slug = sanitize_key( $provider );
-		if ( ! isset( self::CONSTANTS[ $slug ] ) || ! function_exists( 'get_option' ) || ! function_exists( 'update_option' ) ) {
+		if ( ! isset( self::CONSTANTS[ $slug ] ) ) {
+			return false;
+		}
+
+		$spec         = self::CONSTANTS[ $slug ];
+		$secret_only  = ! empty( $spec['secret_only'] );
+		$secret_field = 'musicfetch' === $slug ? 'api_key' : 'client_secret';
+
+		if ( self::has_core_vault() ) {
+			if ( $clear ) {
+				if ( ! $secret_only ) {
+					\MDS\ReleaseManager\Api\ExtensionApi::delete_secret( $slug, 'client_id' );
+				}
+				\MDS\ReleaseManager\Api\ExtensionApi::delete_secret( $slug, $secret_field );
+				self::delete_legacy_option_entry( $slug );
+				return true;
+			}
+
+			$clean_id     = trim( sanitize_text_field( $client_id ) );
+			$clean_secret = trim( $client_secret );
+
+			if ( ! $secret_only && '' !== $clean_id ) {
+				\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, 'client_id', $clean_id );
+			}
+			if ( '' !== $clean_secret ) {
+				\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, $secret_field, $clean_secret );
+			}
+			self::delete_legacy_option_entry( $slug );
+			return true;
+		}
+
+		if ( ! function_exists( 'get_option' ) || ! function_exists( 'update_option' ) ) {
 			return false;
 		}
 

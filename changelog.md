@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-11-27
+
+### Changed
+- Updated plugin branding to Musty Dungeon Studios (Walton International Business Group LLC), added official SVG/PNG brand assets (`assets/icon.svg`, `icon-128x128.png`, `icon-256x256.png`), and standardized on `GPL-3.0-or-later` + `COMMERCIAL-LICENSE.md`.
+- Updated the Settings tab screen-hook check (`_page_mds-release-settings`) for compatibility with MDS Release Manager `2.2.0`'s renamed **Release Manager** top-level menu.
+
 ## [2.1.1] - 2026-11-26
 
 ### Changed
