@@ -1,7 +1,10 @@
 <?php
 /**
- * Secure credential storage and masking for authenticated audio providers
- * (SoundCloud OAuth 2.1 and Spotify OAuth 2.0 Client Credentials).
+ * Secure credential storage and masking for self-hosted Funkwhale pods.
+ *
+ * All cloud-backed DSP credentials (Spotify, SoundCloud, TIDAL, Jamendo, Musicfetch)
+ * are managed centrally by MDS Cloud Gateway so customer sites remain zero-config.
+ * Only self-hosted Funkwhale pod credentials stay local in Core's Hub SecretVault.
  *
  * @package MDS\AudioProviders
  * @since   2.0.0
@@ -16,18 +19,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Reads, encrypts, and masks API credentials for audio providers.
- *
- * Supports `wp-config.php` constants (`MDS_AP_SOUNDCLOUD_CLIENT_ID`,
- * `MDS_AP_SOUNDCLOUD_CLIENT_SECRET`, `MDS_AP_SPOTIFY_CLIENT_ID`,
- * `MDS_AP_SPOTIFY_CLIENT_SECRET`) with fallback to AES-256-CBC encrypted options.
+ * Reads, encrypts, and masks local Funkwhale pod credentials.
  *
  * @since 2.0.0
  */
 final class Credentials {
 
 	/**
-	 * Option key storing encrypted provider credentials.
+	 * Option key storing legacy encrypted provider credentials.
 	 *
 	 * @var string
 	 */
@@ -36,44 +35,18 @@ final class Credentials {
 	/**
 	 * Constant map for `wp-config.php` overrides.
 	 *
-	 * @var array<string, array{client_id: string, client_secret: string, require_secret: bool, secret_only?: bool}>
+	 * @var array<string, array{client_id: string, client_secret: string, require_secret: bool}>
 	 */
 	private const CONSTANTS = array(
-		'soundcloud' => array(
-			'client_id'      => 'MDS_AP_SOUNDCLOUD_CLIENT_ID',
-			'client_secret'  => 'MDS_AP_SOUNDCLOUD_CLIENT_SECRET',
-			'require_secret' => true,
-		),
-		'spotify'    => array(
-			'client_id'      => 'MDS_AP_SPOTIFY_CLIENT_ID',
-			'client_secret'  => 'MDS_AP_SPOTIFY_CLIENT_SECRET',
-			'require_secret' => true,
-		),
-		'tidal'      => array(
-			'client_id'      => 'MDS_AP_TIDAL_CLIENT_ID',
-			'client_secret'  => 'MDS_AP_TIDAL_CLIENT_SECRET',
-			'require_secret' => true,
-		),
-		'jamendo'    => array(
-			'client_id'      => 'MDS_AP_JAMENDO_CLIENT_ID',
-			'client_secret'  => 'MDS_AP_JAMENDO_CLIENT_SECRET',
-			'require_secret' => false,
-		),
-		'funkwhale'  => array(
+		'funkwhale' => array(
 			'client_id'      => 'MDS_AP_FUNKWHALE_POD_URL',
 			'client_secret'  => 'MDS_AP_FUNKWHALE_TOKEN',
 			'require_secret' => false,
 		),
-		'musicfetch' => array(
-			'client_id'      => '',
-			'client_secret'  => 'MDS_AP_MUSICFETCH_API_KEY',
-			'require_secret' => true,
-			'secret_only'    => true,
-		),
 	);
 
 	/**
-	 * Registers audio provider schemas with MDS Release Manager's centralized Credentials page.
+	 * Registers the Funkwhale schema with MDS Release Manager's centralized Credentials page.
 	 *
 	 * @since 2.2.0
 	 *
@@ -84,9 +57,7 @@ final class Credentials {
 	}
 
 	/**
-	 * Registers SoundCloud, Spotify, TIDAL, Jamendo, Funkwhale, and Musicfetch schemas.
-	 *
-	 * Canonical namespaces (`spotify`, `musicfetch`) merge automatically with sibling plugins.
+	 * Registers only the self-hosted Funkwhale pod schema in Core's Hub SecretVault.
 	 *
 	 * @since 2.2.0
 	 *
@@ -94,99 +65,11 @@ final class Credentials {
 	 * @return array<string, array<string, mixed>> Updated schemas.
 	 */
 	public static function register_secret_schemas( array $schemas ): array {
-		$plugin = __( 'MDS Audio Providers', 'mds-audio-providers' );
-
-		$schemas['soundcloud'] = array(
-			'namespace'     => 'soundcloud',
-			'label'         => __( 'SoundCloud', 'mds-audio-providers' ),
-			'description'   => __( 'OAuth 2.1 Client Credentials for SoundCloud track and playlist previews.', 'mds-audio-providers' ),
-			'plugin'        => $plugin,
-			'docs_url'      => 'https://soundcloud.com/you/apps',
-			'test_callback' => array( SoundCloudProvider::class, 'test_connection' ),
-			'fields'        => array(
-				'client_id'     => array(
-					'label'     => __( 'SoundCloud Client ID', 'mds-audio-providers' ),
-					'is_secret' => false,
-					'const'     => array( 'MDS_AP_SOUNDCLOUD_CLIENT_ID' ),
-					'env'       => array( 'MDS_AP_SOUNDCLOUD_CLIENT_ID' ),
-				),
-				'client_secret' => array(
-					'label'     => __( 'SoundCloud Client Secret', 'mds-audio-providers' ),
-					'is_secret' => true,
-					'const'     => array( 'MDS_AP_SOUNDCLOUD_CLIENT_SECRET' ),
-					'env'       => array( 'MDS_AP_SOUNDCLOUD_CLIENT_SECRET' ),
-				),
-			),
-		);
-
-		$schemas['spotify'] = array(
-			'namespace'     => 'spotify',
-			'label'         => __( 'Spotify', 'mds-audio-providers' ),
-			'description'   => __( 'OAuth 2.0 Client Credentials shared across MDS Audio Providers and MDS Metadata.', 'mds-audio-providers' ),
-			'plugin'        => $plugin,
-			'docs_url'      => 'https://developer.spotify.com/dashboard',
-			'test_callback' => array( SpotifyProvider::class, 'test_connection' ),
-			'fields'        => array(
-				'client_id'     => array(
-					'label'     => __( 'Spotify Client ID', 'mds-audio-providers' ),
-					'is_secret' => false,
-					'const'     => array( 'MDS_AP_SPOTIFY_CLIENT_ID' ),
-					'env'       => array( 'MDS_AP_SPOTIFY_CLIENT_ID' ),
-				),
-				'client_secret' => array(
-					'label'     => __( 'Spotify Client Secret', 'mds-audio-providers' ),
-					'is_secret' => true,
-					'const'     => array( 'MDS_AP_SPOTIFY_CLIENT_SECRET' ),
-					'env'       => array( 'MDS_AP_SPOTIFY_CLIENT_SECRET' ),
-				),
-			),
-		);
-
-		$schemas['tidal'] = array(
-			'namespace'     => 'tidal',
-			'label'         => __( 'TIDAL', 'mds-audio-providers' ),
-			'description'   => __( 'OAuth 2.0 Client Credentials for TIDAL Open API v2 UPC album lookups.', 'mds-audio-providers' ),
-			'plugin'        => $plugin,
-			'docs_url'      => 'https://developer.tidal.com/',
-			'test_callback' => array( TidalProvider::class, 'test_connection' ),
-			'fields'        => array(
-				'client_id'     => array(
-					'label'     => __( 'TIDAL Client ID', 'mds-audio-providers' ),
-					'is_secret' => false,
-					'const'     => array( 'MDS_AP_TIDAL_CLIENT_ID' ),
-					'env'       => array( 'MDS_AP_TIDAL_CLIENT_ID' ),
-				),
-				'client_secret' => array(
-					'label'     => __( 'TIDAL Client Secret', 'mds-audio-providers' ),
-					'is_secret' => true,
-					'const'     => array( 'MDS_AP_TIDAL_CLIENT_SECRET' ),
-					'env'       => array( 'MDS_AP_TIDAL_CLIENT_SECRET' ),
-				),
-			),
-		);
-
-		$schemas['jamendo'] = array(
-			'namespace'     => 'jamendo',
-			'label'         => __( 'Jamendo', 'mds-audio-providers' ),
-			'description'   => __( 'Free Jamendo API v3.0 Client ID for direct MP3 streams.', 'mds-audio-providers' ),
-			'plugin'        => $plugin,
-			'docs_url'      => 'https://devportal.jamendo.com/',
-			'test_callback' => array( JamendoProvider::class, 'test_connection' ),
-			'fields'        => array(
-				'client_id' => array(
-					'label'     => __( 'Jamendo Client ID', 'mds-audio-providers' ),
-					'is_secret' => false,
-					'const'     => array( 'MDS_AP_JAMENDO_CLIENT_ID' ),
-					'env'       => array( 'MDS_AP_JAMENDO_CLIENT_ID' ),
-				),
-			),
-		);
-
 		$schemas['funkwhale'] = array(
 			'namespace'     => 'funkwhale',
 			'label'         => __( 'Funkwhale', 'mds-audio-providers' ),
-			'description'   => __( 'Optional Pod Base URL and Bearer token for private Funkwhale pods.', 'mds-audio-providers' ),
-			'plugin'        => $plugin,
+			'description'   => __( 'Optional Pod Base URL and Bearer token for self-hosted or private Funkwhale pods.', 'mds-audio-providers' ),
+			'plugin'        => __( 'MDS Audio Providers', 'mds-audio-providers' ),
 			'test_callback' => array( FunkwhaleProvider::class, 'test_connection' ),
 			'fields'        => array(
 				'client_id'     => array(
@@ -205,30 +88,13 @@ final class Credentials {
 			),
 		);
 
-		$schemas['musicfetch'] = array(
-			'namespace'     => 'musicfetch',
-			'label'         => __( 'Musicfetch', 'mds-audio-providers' ),
-			'description'   => __( 'Optional commercial multi-DSP API key (x-token) shared across MDS Audio Providers and MDS Metadata.', 'mds-audio-providers' ),
-			'plugin'        => $plugin,
-			'docs_url'      => 'https://musicfetch.io/',
-			'test_callback' => array( MusicfetchProvider::class, 'test_connection' ),
-			'fields'        => array(
-				'api_key' => array(
-					'label'     => __( 'Musicfetch API Key (x-token)', 'mds-audio-providers' ),
-					'is_secret' => true,
-					'const'     => array( 'MDS_AP_MUSICFETCH_API_KEY' ),
-					'env'       => array( 'MDS_AP_MUSICFETCH_API_KEY' ),
-				),
-			),
-		);
-
 		return $schemas;
 	}
 
 	/**
 	 * Checks whether Core's centralized Hub SecretVault facade is available.
 	 *
-	 * @return bool True when `ExtensionApi::get_secret_with_meta()` is loaded.
+	 * @return bool
 	 */
 	private static function has_core_vault(): bool {
 		return class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class )
@@ -236,56 +102,54 @@ final class Credentials {
 	}
 
 	/**
-	 * Retrieves decrypted credentials for a provider (delegating to Core's Hub SecretVault when available).
+	 * Retrieves decrypted credentials for a local provider (`funkwhale`).
 	 *
-	 * @param string $provider Provider slug (`soundcloud`, `spotify`, `tidal`, `jamendo`, `funkwhale`, `musicfetch`).
+	 * @param string $provider Provider slug (`funkwhale`).
 	 * @return array{client_id: string, client_secret: string, source: string}
 	 */
 	public static function get( string $provider ): array {
 		$slug = sanitize_key( $provider );
 		$spec = self::CONSTANTS[ $slug ] ?? null;
+		if ( null === $spec ) {
+			return array(
+				'client_id'     => '',
+				'client_secret' => '',
+				'source'        => 'none',
+			);
+		}
 
-		if ( null !== $spec && self::has_core_vault() ) {
-			$secret_only  = ! empty( $spec['secret_only'] );
-			$secret_field = 'musicfetch' === $slug ? 'api_key' : 'client_secret';
-
-			$id_meta = ! $secret_only
-				? \MDS\ReleaseManager\Api\ExtensionApi::get_secret_with_meta(
-					$slug,
-					'client_id',
-					array(
-						'const' => '' !== $spec['client_id'] ? array( $spec['client_id'] ) : array(),
-						'env'   => '' !== $spec['client_id'] ? array( $spec['client_id'] ) : array(),
-					)
+		if ( self::has_core_vault() ) {
+			$id_meta = \MDS\ReleaseManager\Api\ExtensionApi::get_secret_with_meta(
+				$slug,
+				'client_id',
+				array(
+					'const' => array( $spec['client_id'] ),
+					'env'   => array( $spec['client_id'] ),
 				)
-				: array(
-					'value'  => '',
-					'source' => 'none',
-				);
+			);
 
 			$sec_meta = \MDS\ReleaseManager\Api\ExtensionApi::get_secret_with_meta(
 				$slug,
-				$secret_field,
+				'client_secret',
 				array(
-					'const' => '' !== $spec['client_secret'] ? array( $spec['client_secret'] ) : array(),
-					'env'   => '' !== $spec['client_secret'] ? array( $spec['client_secret'] ) : array(),
+					'const' => array( $spec['client_secret'] ),
+					'env'   => array( $spec['client_secret'] ),
 				)
 			);
 
 			$cid = $id_meta['value'];
 			$sec = $sec_meta['value'];
 
-			// Auto-migrate any legacy stored option value into the Hub vault on first read.
 			if ( '' === $cid && '' === $sec ) {
 				$legacy = self::read_legacy_option( $slug );
 				if ( '' !== $legacy['client_id'] || '' !== $legacy['client_secret'] ) {
-					if ( '' !== $legacy['client_id'] && ! $secret_only ) {
+					if ( '' !== $legacy['client_id'] ) {
 						\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, 'client_id', $legacy['client_id'] );
 						$cid               = $legacy['client_id'];
 						$id_meta['source'] = 'vault';
 					}
 					if ( '' !== $legacy['client_secret'] ) {
-						\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, $secret_field, $legacy['client_secret'] );
+						\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, 'client_secret', $legacy['client_secret'] );
 						$sec                = $legacy['client_secret'];
 						$sec_meta['source'] = 'vault';
 					}
@@ -293,16 +157,10 @@ final class Credentials {
 				}
 			}
 
-			$is_configured = $secret_only
-				? '' !== $sec
-				: ( '' !== $cid && ( ! $spec['require_secret'] || '' !== $sec ) );
-
-			$source = 'none';
-			if ( $is_configured ) {
-				$source = $secret_only
-					? $sec_meta['source']
-					: ( 'none' !== $id_meta['source'] ? $id_meta['source'] : $sec_meta['source'] );
-			}
+			$is_configured = '' !== $cid;
+			$source        = $is_configured
+				? ( 'none' !== $id_meta['source'] ? $id_meta['source'] : $sec_meta['source'] )
+				: 'none';
 
 			return array(
 				'client_id'     => $cid,
@@ -311,46 +169,105 @@ final class Credentials {
 			);
 		}
 
-		if ( isset( self::CONSTANTS[ $slug ] ) ) {
-			$secret_only  = ! empty( $spec['secret_only'] );
-			$id_const     = $spec['client_id'];
-			$secret_const = $spec['client_secret'];
-			$has_id_const = '' !== $id_const && defined( $id_const );
-			$has_sc_const = '' !== $secret_const && defined( $secret_const );
-			if ( $secret_only && $has_sc_const ) {
-				$sec = trim( (string) constant( $secret_const ) );
-				if ( '' !== $sec ) {
-					return array(
-						'client_id'     => '',
-						'client_secret' => $sec,
-						'source'        => 'constant',
-					);
-				}
-			} elseif ( ! $secret_only && $has_id_const && ( ! $spec['require_secret'] || $has_sc_const ) ) {
-				$cid = trim( (string) constant( $id_const ) );
-				$sec = $has_sc_const ? trim( (string) constant( $secret_const ) ) : '';
-				if ( '' !== $cid && ( ! $spec['require_secret'] || '' !== $sec ) ) {
-					return array(
-						'client_id'     => $cid,
-						'client_secret' => $sec,
-						'source'        => 'constant',
-					);
-				}
+		$id_const     = $spec['client_id'];
+		$secret_const = $spec['client_secret'];
+		if ( defined( $id_const ) ) {
+			$cid = trim( (string) constant( $id_const ) );
+			$sec = defined( $secret_const ) ? trim( (string) constant( $secret_const ) ) : '';
+			if ( '' !== $cid ) {
+				return array(
+					'client_id'     => $cid,
+					'client_secret' => $sec,
+					'source'        => 'constant',
+				);
 			}
 		}
 
-		$legacy         = self::read_legacy_option( $slug );
-		$secret_only    = isset( self::CONSTANTS[ $slug ] ) && ! empty( self::CONSTANTS[ $slug ]['secret_only'] );
-		$require_secret = isset( self::CONSTANTS[ $slug ] ) ? self::CONSTANTS[ $slug ]['require_secret'] : true;
-		$is_configured  = $secret_only
-			? '' !== $legacy['client_secret']
-			: ( '' !== $legacy['client_id'] && ( ! $require_secret || '' !== $legacy['client_secret'] ) );
-
+		$legacy = self::read_legacy_option( $slug );
 		return array(
 			'client_id'     => $legacy['client_id'],
 			'client_secret' => $legacy['client_secret'],
-			'source'        => $is_configured ? 'option' : 'none',
+			'source'        => '' !== $legacy['client_id'] ? 'option' : 'none',
 		);
+	}
+
+	/**
+	 * Returns safe, masked credential descriptors for the React Admin UI.
+	 *
+	 * @return array<string, array{configured: bool, source: string, client_id_masked: string}>
+	 */
+	public static function get_masked_status(): array {
+		$creds = self::get( 'funkwhale' );
+		return array(
+			'funkwhale' => array(
+				'configured'       => '' !== $creds['client_id'],
+				'source'           => $creds['source'],
+				'client_id_masked' => $creds['client_id'],
+			),
+		);
+	}
+
+	/**
+	 * Saves credentials for a local provider (`funkwhale`).
+	 *
+	 * @param string $provider      Provider slug (`funkwhale`).
+	 * @param string $client_id     Funkwhale Pod Base URL.
+	 * @param string $client_secret Optional Bearer token.
+	 * @param bool   $clear         Whether to wipe stored credentials.
+	 * @return bool
+	 */
+	public static function save( string $provider, string $client_id, string $client_secret = '', bool $clear = false ): bool {
+		$slug = sanitize_key( $provider );
+		if ( ! isset( self::CONSTANTS[ $slug ] ) ) {
+			return false;
+		}
+
+		if ( self::has_core_vault() ) {
+			if ( $clear ) {
+				\MDS\ReleaseManager\Api\ExtensionApi::delete_secret( $slug, 'client_id' );
+				\MDS\ReleaseManager\Api\ExtensionApi::delete_secret( $slug, 'client_secret' );
+				self::delete_legacy_option_entry( $slug );
+				return true;
+			}
+
+			$clean_id     = trim( sanitize_text_field( $client_id ) );
+			$clean_secret = trim( $client_secret );
+			if ( '' !== $clean_id ) {
+				\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, 'client_id', $clean_id );
+			}
+			if ( '' !== $clean_secret ) {
+				\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, 'client_secret', $clean_secret );
+			}
+			self::delete_legacy_option_entry( $slug );
+			return true;
+		}
+
+		if ( ! function_exists( 'get_option' ) || ! function_exists( 'update_option' ) ) {
+			return false;
+		}
+
+		$stored = get_option( self::OPTION_NAME, array() );
+		if ( ! is_array( $stored ) ) {
+			$stored = array();
+		}
+
+		if ( $clear ) {
+			unset( $stored[ $slug ] );
+			return update_option( self::OPTION_NAME, $stored, false );
+		}
+
+		$clean_id        = trim( sanitize_text_field( $client_id ) );
+		$clean_secret    = trim( $client_secret );
+		$existing_secret = isset( $stored[ $slug ]['client_secret'] ) && is_string( $stored[ $slug ]['client_secret'] )
+			? $stored[ $slug ]['client_secret']
+			: '';
+
+		$stored[ $slug ] = array(
+			'client_id'     => $clean_id,
+			'client_secret' => '' !== $clean_secret ? self::encrypt( $clean_secret ) : $existing_secret,
+		);
+
+		return update_option( self::OPTION_NAME, $stored, false );
 	}
 
 	/**
@@ -395,125 +312,10 @@ final class Credentials {
 	}
 
 	/**
-	 * Returns safe, masked credential descriptors for the React Admin UI.
-	 *
-	 * @return array<string, array{configured: bool, source: string, client_id_masked: string}>
-	 */
-	public static function get_masked_status(): array {
-		$out = array();
-		foreach ( self::CONSTANTS as $slug => $spec ) {
-			$creds       = self::get( $slug );
-			$secret_only = ! empty( $spec['secret_only'] );
-			$configured  = $secret_only
-				? '' !== $creds['client_secret']
-				: ( '' !== $creds['client_id'] && ( ! $spec['require_secret'] || '' !== $creds['client_secret'] ) );
-			$display_raw = $secret_only ? $creds['client_secret'] : $creds['client_id'];
-
-			$out[ $slug ] = array(
-				'configured'       => $configured,
-				'source'           => $creds['source'],
-				'client_id_masked' => 'funkwhale' === $slug ? $display_raw : self::mask( $display_raw ),
-			);
-		}
-		return $out;
-	}
-
-	/**
-	 * Saves credentials for a provider (encrypting the client secret at rest).
-	 *
-	 * Passing an empty string for `client_secret` preserves an existing secret
-	 * unless `clear` is true.
-	 *
-	 * @param string $provider      Provider slug (`soundcloud` or `spotify`).
-	 * @param string $client_id     OAuth Client ID.
-	 * @param string $client_secret OAuth Client Secret.
-	 * @param bool   $clear         Whether to wipe stored credentials for this provider.
-	 * @return bool True on save.
-	 */
-	public static function save( string $provider, string $client_id, string $client_secret = '', bool $clear = false ): bool {
-		$slug = sanitize_key( $provider );
-		if ( ! isset( self::CONSTANTS[ $slug ] ) ) {
-			return false;
-		}
-
-		$spec         = self::CONSTANTS[ $slug ];
-		$secret_only  = ! empty( $spec['secret_only'] );
-		$secret_field = 'musicfetch' === $slug ? 'api_key' : 'client_secret';
-
-		if ( self::has_core_vault() ) {
-			if ( $clear ) {
-				if ( ! $secret_only ) {
-					\MDS\ReleaseManager\Api\ExtensionApi::delete_secret( $slug, 'client_id' );
-				}
-				\MDS\ReleaseManager\Api\ExtensionApi::delete_secret( $slug, $secret_field );
-				self::delete_legacy_option_entry( $slug );
-				return true;
-			}
-
-			$clean_id     = trim( sanitize_text_field( $client_id ) );
-			$clean_secret = trim( $client_secret );
-
-			if ( ! $secret_only && '' !== $clean_id ) {
-				\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, 'client_id', $clean_id );
-			}
-			if ( '' !== $clean_secret ) {
-				\MDS\ReleaseManager\Api\ExtensionApi::set_secret( $slug, $secret_field, $clean_secret );
-			}
-			self::delete_legacy_option_entry( $slug );
-			return true;
-		}
-
-		if ( ! function_exists( 'get_option' ) || ! function_exists( 'update_option' ) ) {
-			return false;
-		}
-
-		$stored = get_option( self::OPTION_NAME, array() );
-		if ( ! is_array( $stored ) ) {
-			$stored = array();
-		}
-
-		if ( $clear ) {
-			unset( $stored[ $slug ] );
-			return update_option( self::OPTION_NAME, $stored, false );
-		}
-
-		$clean_id     = trim( sanitize_text_field( $client_id ) );
-		$clean_secret = trim( $client_secret );
-
-		$existing_secret = isset( $stored[ $slug ]['client_secret'] ) && is_string( $stored[ $slug ]['client_secret'] )
-			? $stored[ $slug ]['client_secret']
-			: '';
-
-		$stored[ $slug ] = array(
-			'client_id'     => $clean_id,
-			'client_secret' => '' !== $clean_secret ? self::encrypt( $clean_secret ) : $existing_secret,
-		);
-
-		return update_option( self::OPTION_NAME, $stored, false );
-	}
-
-	/**
-	 * Masks an identifier for safe display in admin UIs.
-	 *
-	 * @param string $value Raw value.
-	 * @return string Masked string.
-	 */
-	private static function mask( string $value ): string {
-		$len = strlen( $value );
-		if ( 0 === $len ) {
-			return '';
-		}
-		if ( $len <= 6 ) {
-			return str_repeat( '•', $len );
-		}
-		return substr( $value, 0, 3 ) . str_repeat( '•', min( 12, $len - 6 ) ) . substr( $value, -3 );
-	}
-
-	/**
-	 * Encrypts a secret string using authenticated OpenSSL AES-256-GCM (or AES-256-CBC + HMAC-SHA256).
+	 * Encrypts a secret string when Core's Hub SecretVault is not active.
 	 *
 	 * @param string $plain Plaintext secret.
-	 * @return string Authenticated ciphertext, or prefixed base64 fallback only when OpenSSL is unavailable.
+	 * @return string
 	 */
 	private static function encrypt( string $plain ): string {
 		if ( '' === $plain ) {
@@ -528,25 +330,16 @@ final class Credentials {
 				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Encoding binary AES-256-GCM ciphertext.
 				return 'gcm:' . base64_encode( $iv . $tag . $enc );
 			}
-
-			// Fallback to AES-256-CBC + HMAC-SHA256 if GCM is unsupported by the OpenSSL build.
-			$cbc_iv  = random_bytes( 16 );
-			$cbc_enc = openssl_encrypt( $plain, 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $cbc_iv );
-			if ( is_string( $cbc_enc ) ) {
-				$mac = hash_hmac( 'sha256', $cbc_iv . $cbc_enc, $key, true );
-				// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Encoding binary AES-256-CBC+HMAC ciphertext.
-				return 'hmac:' . base64_encode( $mac . $cbc_iv . $cbc_enc );
-			}
 		}
 		// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode -- Fallback encoding when OpenSSL is unavailable.
 		return 'b64:' . base64_encode( $plain );
 	}
 
 	/**
-	 * Decrypts a stored secret string (supports `gcm:`, `hmac:`, legacy `enc:`, and `b64:`).
+	 * Decrypts a stored legacy secret string.
 	 *
 	 * @param string $stored Stored value.
-	 * @return string Plaintext secret.
+	 * @return string
 	 */
 	private static function decrypt( string $stored ): string {
 		if ( str_starts_with( $stored, 'gcm:' ) && function_exists( 'openssl_decrypt' ) ) {
@@ -554,40 +347,7 @@ final class Credentials {
 			$raw = base64_decode( substr( $stored, 4 ), true );
 			if ( is_string( $raw ) && strlen( $raw ) > 28 ) {
 				$key = hash( 'sha256', self::key_material(), true );
-				$iv  = substr( $raw, 0, 12 );
-				$tag = substr( $raw, 12, 16 );
-				$dec = openssl_decrypt( substr( $raw, 28 ), 'aes-256-gcm', $key, OPENSSL_RAW_DATA, $iv, $tag );
-				if ( is_string( $dec ) ) {
-					return $dec;
-				}
-			}
-			return '';
-		}
-		if ( str_starts_with( $stored, 'hmac:' ) && function_exists( 'openssl_decrypt' ) ) {
-			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding binary AES-256-CBC+HMAC ciphertext.
-			$raw = base64_decode( substr( $stored, 5 ), true );
-			if ( is_string( $raw ) && strlen( $raw ) > 48 ) {
-				$key      = hash( 'sha256', self::key_material(), true );
-				$mac      = substr( $raw, 0, 32 );
-				$payload  = substr( $raw, 32 );
-				$expected = hash_hmac( 'sha256', $payload, $key, true );
-				if ( hash_equals( $expected, $mac ) ) {
-					$iv  = substr( $payload, 0, 16 );
-					$dec = openssl_decrypt( substr( $payload, 16 ), 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv );
-					if ( is_string( $dec ) ) {
-						return $dec;
-					}
-				}
-			}
-			return '';
-		}
-		if ( str_starts_with( $stored, 'enc:' ) && function_exists( 'openssl_decrypt' ) ) {
-			// phpcs:ignore WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode -- Decoding legacy AES-256-CBC ciphertext.
-			$raw = base64_decode( substr( $stored, 4 ), true );
-			if ( is_string( $raw ) && strlen( $raw ) > 16 ) {
-				$key = hash( 'sha256', self::key_material(), true );
-				$iv  = substr( $raw, 0, 16 );
-				$dec = openssl_decrypt( substr( $raw, 16 ), 'aes-256-cbc', $key, OPENSSL_RAW_DATA, $iv );
+				$dec = openssl_decrypt( substr( $raw, 28 ), 'aes-256-gcm', $key, OPENSSL_RAW_DATA, substr( $raw, 0, 12 ), substr( $raw, 12, 16 ) );
 				if ( is_string( $dec ) ) {
 					return $dec;
 				}
@@ -605,7 +365,7 @@ final class Credentials {
 	/**
 	 * Derives site-specific key material from WordPress auth salts.
 	 *
-	 * @return string Key material.
+	 * @return string
 	 */
 	private static function key_material(): string {
 		if ( function_exists( 'wp_salt' ) ) {

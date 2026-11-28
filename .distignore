@@ -1,0 +1,21 @@
+# Proprietary server IP — NEVER shipped in customer plugin ZIPs
+server/
+server
+
+# Development, CI, and test files
+.git/
+.github/
+.gitignore
+.gitattributes
+.agents/
+.local/
+.vscode/
+tests/
+dist/
+node_modules/
+phpcs.xml.dist
+phpstan.neon.dist
+composer.lock
+*.log
+*.zip
+*.sha256

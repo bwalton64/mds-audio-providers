@@ -24,6 +24,8 @@
 	const boot = window.mdsAudioProvidersAdmin || {};
 	const restBase = boot.restBase || '/mds-ap/v1';
 
+	const TIER_RANK = { free: 10, pro: 20, label: 30, agency: 40 };
+
 	const PROVIDER_ICONS = {
 		local: 'dashicons dashicons-format-audio',
 		apple_music: 'fab fa-apple',
@@ -42,63 +44,18 @@
 
 	const PROVIDER_DESCRIPTIONS = {
 		local: __( 'Plays the Release Audio Preview URL (.mp3/.m4a) configured directly on each Release.', 'mds-audio-providers' ),
-		apple_music: __( 'Resolves native 30-second .m4a previews automatically by Release UPC/EAN via the public iTunes Lookup API. Zero API keys required.', 'mds-audio-providers' ),
-		deezer: __( 'Resolves native 30-second .mp3 previews automatically by Release UPC/EAN via Deezer’s public API. Zero API keys required.', 'mds-audio-providers' ),
-		bandcamp: __( 'Resolves Bandcamp album tracks Just-in-Time from each release’s verified Bandcamp Album ID, with optional EmbeddedPlayer iframe fallback.', 'mds-audio-providers' ),
-		audius: __( 'Resolves native 320kbps HTML5 audio streams from Audius track, album, or playlist URLs via the Open Audio Protocol. Zero API keys required.', 'mds-audio-providers' ),
-		soundcloud: __( 'Resolves official 30-second previews (/preview) and streams for releases with a SoundCloud URL. Requires SoundCloud OAuth 2.1 credentials.', 'mds-audio-providers' ),
-		jamendo: __( 'Resolves direct HTML5 .mp3 streams for Jamendo albums and tracks via Jamendo API v3.0. Requires a free Jamendo Client ID.', 'mds-audio-providers' ),
-		funkwhale: __( 'Resolves native HTML5 audio streams from self-hosted or Fediverse Funkwhale pods. Public pods work zero-auth; add a Pod URL & optional Bearer token for private pods or connection testing.', 'mds-audio-providers' ),
-		spotify: __( 'Looks up releases by UPC/EAN via Spotify Web API for native 30s preview_url, with optional official Spotify iframe embed fallback.', 'mds-audio-providers' ),
-		tidal: __( 'Resolves TIDAL albums by UPC/EAN via TIDAL Open API v2 (or directly from a Release’s TIDAL URL) and renders the official TIDAL embed player.', 'mds-audio-providers' ),
-		mixcloud: __( 'Renders the official Mixcloud embed widget for DJ sets, radio shows, and long-form mixes from a Release’s Mixcloud URL. Zero API keys required.', 'mds-audio-providers' ),
-		audiomack: __( 'Renders the official Audiomack embed player for songs, albums, and playlists from a Release’s Audiomack URL. Zero API keys required.', 'mds-audio-providers' ),
-		musicfetch: __( 'Optional commercial multi-DSP aggregator (BYO paid key). Queries Musicfetch by Release UPC/EAN across 30+ services for timed preview clips.', 'mds-audio-providers' ),
-	};
-
-	const CREDENTIAL_CONFIGS = {
-		soundcloud: {
-			idLabel: __( 'SoundCloud Client ID', 'mds-audio-providers' ),
-			secretLabel: __( 'SoundCloud Client Secret', 'mds-audio-providers' ),
-			hasId: true,
-			hasSecret: true,
-			testLabel: __( 'Test SoundCloud Connection', 'mds-audio-providers' ),
-		},
-		spotify: {
-			idLabel: __( 'Spotify Client ID', 'mds-audio-providers' ),
-			secretLabel: __( 'Spotify Client Secret', 'mds-audio-providers' ),
-			hasId: true,
-			hasSecret: true,
-			testLabel: __( 'Test Spotify Connection', 'mds-audio-providers' ),
-		},
-		tidal: {
-			idLabel: __( 'TIDAL Client ID', 'mds-audio-providers' ),
-			secretLabel: __( 'TIDAL Client Secret', 'mds-audio-providers' ),
-			hasId: true,
-			hasSecret: true,
-			testLabel: __( 'Test TIDAL Connection', 'mds-audio-providers' ),
-		},
-		jamendo: {
-			idLabel: __( 'Jamendo Client ID', 'mds-audio-providers' ),
-			secretLabel: '',
-			hasId: true,
-			hasSecret: false,
-			testLabel: __( 'Test Jamendo Connection', 'mds-audio-providers' ),
-		},
-		funkwhale: {
-			idLabel: __( 'Funkwhale Pod Base URL (optional)', 'mds-audio-providers' ),
-			secretLabel: __( 'Funkwhale Bearer Token (optional, private pods)', 'mds-audio-providers' ),
-			hasId: true,
-			hasSecret: true,
-			testLabel: __( 'Test Funkwhale Pod Connection', 'mds-audio-providers' ),
-		},
-		musicfetch: {
-			idLabel: '',
-			secretLabel: __( 'Musicfetch API Key (x-token)', 'mds-audio-providers' ),
-			hasId: false,
-			hasSecret: true,
-			testLabel: __( 'Test Musicfetch Connection', 'mds-audio-providers' ),
-		},
+		apple_music: __( 'Free Tier · Cloud Gateway — Resolves native 30-second .m4a previews automatically by Release UPC/EAN. Zero API keys required.', 'mds-audio-providers' ),
+		deezer: __( 'Free Tier · Cloud Gateway — Resolves native 30-second .mp3 previews automatically by Release UPC/EAN. Zero API keys required.', 'mds-audio-providers' ),
+		bandcamp: __( 'Free Tier · Cloud Gateway — Resolves Bandcamp album tracks Just-in-Time from each release’s verified Bandcamp Album ID, with optional EmbeddedPlayer iframe fallback.', 'mds-audio-providers' ),
+		audius: __( 'Free Tier · Cloud Gateway — Resolves native 320kbps HTML5 audio streams from Audius track, album, or playlist URLs. Zero API keys required.', 'mds-audio-providers' ),
+		mixcloud: __( 'Free Tier · Cloud Gateway — Renders the official Mixcloud embed widget for DJ sets and radio shows. Zero API keys required.', 'mds-audio-providers' ),
+		audiomack: __( 'Free Tier · Cloud Gateway — Renders the official Audiomack embed player for songs, albums, and playlists. Zero API keys required.', 'mds-audio-providers' ),
+		soundcloud: __( 'Pro Tier · Cloud Gateway — Resolves official 30-second previews and streams for SoundCloud URLs using centrally managed MDS credentials (zero setup).', 'mds-audio-providers' ),
+		jamendo: __( 'Pro Tier · Cloud Gateway — Resolves direct HTML5 .mp3 streams for Jamendo albums and tracks using centrally managed MDS credentials (zero setup).', 'mds-audio-providers' ),
+		funkwhale: __( 'Pro Tier · Local Pod — Resolves native HTML5 audio streams directly from your self-hosted or private Funkwhale pod. Configure an optional Pod URL & Bearer token below.', 'mds-audio-providers' ),
+		spotify: __( 'Pro Tier · Cloud Gateway — Resolves releases by UPC/EAN via Spotify Web API using centrally managed MDS credentials, with optional official Spotify iframe embed fallback.', 'mds-audio-providers' ),
+		tidal: __( 'Pro Tier · Cloud Gateway — Resolves TIDAL albums by UPC/EAN or TIDAL URL using centrally managed MDS credentials and renders the official TIDAL embed player.', 'mds-audio-providers' ),
+		musicfetch: __( 'Pro Tier · Cloud Gateway — Queries Musicfetch by Release UPC/EAN across 30+ streaming services using MDS’s centrally managed commercial subscription.', 'mds-audio-providers' ),
 	};
 
 	class AdminErrorBoundary extends Component {
@@ -144,6 +101,11 @@
 		const initial = boot.initial || {};
 		const isEmbeddedTab = Boolean( document.querySelector( '.mds-settings-wrap #mds-audio-providers-admin-root' ) );
 		const [ providers, setProviders ] = useState( Array.isArray( initial.providers ) ? initial.providers : [] );
+		const [ providerTiers ] = useState( initial.provider_tiers || {} );
+		const [ license, setLicense ] = useState( initial.license || { activated: false, tier: '', tier_label: '', key_masked: '', api_base_url: '' } );
+		const [ licenseInput, setLicenseInput ] = useState( '' );
+		const [ licenseBusy, setLicenseBusy ] = useState( false );
+		const [ licenseError, setLicenseError ] = useState( '' );
 		const [ credentials, setCredentials ] = useState( initial.credentials || {} );
 		const [ providerOptions, setProviderOptions ] = useState( initial.provider_options || {} );
 		const [ cache, setCache ] = useState( initial.cache || { count: 0, total_size: '0 B', entries: [] } );
@@ -151,15 +113,18 @@
 		const [ testing, setTesting ] = useState( '' );
 		const [ clearing, setClearing ] = useState( false );
 		const [ notices, setNotices ] = useState( [] );
+		const [ fwInput, setFwInput ] = useState( { client_id: '', client_secret: '' } );
 
-		const [ credInputs, setCredInputs ] = useState( {} );
-
-		const updateCredInput = ( slug, field, value ) => {
-			setCredInputs( ( prev ) => {
-				const entry = Object.assign( { client_id: '', client_secret: '' }, prev[ slug ] || {} );
-				entry[ field ] = value;
-				return Object.assign( {}, prev, { [ slug ]: entry } );
-			} );
+		const hasTier = ( minTier ) => {
+			if ( ! minTier ) {
+				return true;
+			}
+			if ( ! license || ! license.activated ) {
+				return false;
+			}
+			const actual = TIER_RANK[ String( license.tier || '' ).toLowerCase() ] || 0;
+			const req = TIER_RANK[ String( minTier ).toLowerCase() ] || 999;
+			return actual >= req;
 		};
 
 		const toggleProviderOption = ( slug, key, value ) => {
@@ -180,6 +145,24 @@
 			setNotices( ( prev ) => prev.filter( ( n ) => n.id !== id ) );
 		}, [] );
 
+		const syncStateFromResponse = ( res ) => {
+			if ( Array.isArray( res.providers ) ) {
+				setProviders( res.providers );
+			}
+			if ( res.license ) {
+				setLicense( res.license );
+			}
+			if ( res.credentials ) {
+				setCredentials( res.credentials );
+			}
+			if ( res.provider_options ) {
+				setProviderOptions( res.provider_options );
+			}
+			if ( res.cache ) {
+				setCache( res.cache );
+			}
+		};
+
 		const moveProvider = ( index, delta ) => {
 			const target = index + delta;
 			if ( target < 0 || target >= providers.length ) {
@@ -197,13 +180,54 @@
 			);
 		};
 
+		const activateLicense = async () => {
+			if ( ! licenseInput.trim() ) {
+				setLicenseError( __( 'Enter a license key first.', 'mds-audio-providers' ) );
+				return;
+			}
+			setLicenseBusy( true );
+			setLicenseError( '' );
+			try {
+				const res = await apiFetch( {
+					path: restBase + '/license/activate',
+					method: 'POST',
+					data: { license_key: licenseInput.trim() },
+				} );
+				syncStateFromResponse( res );
+				setLicenseInput( '' );
+				pushNotice( res.message || __( 'License activated.', 'mds-audio-providers' ) );
+			} catch ( err ) {
+				const msg = ( err && err.message ) || __( 'License activation failed.', 'mds-audio-providers' );
+				setLicenseError( msg );
+				pushNotice( msg );
+			} finally {
+				setLicenseBusy( false );
+			}
+		};
+
+		const deactivateLicense = async () => {
+			setLicenseBusy( true );
+			try {
+				const res = await apiFetch( {
+					path: restBase + '/license/deactivate',
+					method: 'POST',
+				} );
+				syncStateFromResponse( res );
+				pushNotice( res.message || __( 'License deactivated.', 'mds-audio-providers' ) );
+			} catch ( err ) {
+				pushNotice( ( err && err.message ) || __( 'Failed to deactivate license.', 'mds-audio-providers' ) );
+			} finally {
+				setLicenseBusy( false );
+			}
+		};
+
 		const saveAll = async () => {
 			setSaving( true );
 			try {
 				const payload = {
 					priority: providers.map( ( p ) => p.slug ),
 					disabled: providers.filter( ( p ) => ! p.enabled ).map( ( p ) => p.slug ),
-					credentials: credInputs,
+					credentials: fwInput.client_id || fwInput.client_secret ? { funkwhale: fwInput } : {},
 					provider_options: providerOptions,
 				};
 				const res = await apiFetch( {
@@ -211,19 +235,8 @@
 					method: 'POST',
 					data: payload,
 				} );
-				if ( Array.isArray( res.providers ) ) {
-					setProviders( res.providers );
-				}
-				if ( res.credentials ) {
-					setCredentials( res.credentials );
-				}
-				if ( res.provider_options ) {
-					setProviderOptions( res.provider_options );
-				}
-				if ( res.cache ) {
-					setCache( res.cache );
-				}
-				setCredInputs( {} );
+				syncStateFromResponse( res );
+				setFwInput( { client_id: '', client_secret: '' } );
 				pushNotice( res.message || __( 'Audio provider settings saved.', 'mds-audio-providers' ) );
 			} catch ( err ) {
 				pushNotice( ( err && err.message ) || __( 'Failed to save settings.', 'mds-audio-providers' ) );
@@ -232,13 +245,13 @@
 			}
 		};
 
-		const testProvider = async ( slug ) => {
-			setTesting( slug );
+		const testFunkwhale = async () => {
+			setTesting( 'funkwhale' );
 			try {
 				const res = await apiFetch( {
 					path: restBase + '/test-connection',
 					method: 'POST',
-					data: { provider: slug },
+					data: { provider: 'funkwhale' },
 				} );
 				pushNotice( res.message || ( res.ok ? __( 'Connection succeeded.', 'mds-audio-providers' ) : __( 'Connection failed.', 'mds-audio-providers' ) ) );
 			} catch ( err ) {
@@ -270,39 +283,99 @@
 			if ( ! provider.enabled ) {
 				return __( 'Disabled', 'mds-audio-providers' );
 			}
-			if ( provider.slug === 'soundcloud' || provider.slug === 'jamendo' || provider.slug === 'musicfetch' ) {
-				const cred = credentials[ provider.slug ];
-				return cred && cred.configured
-					? __( 'Configured', 'mds-audio-providers' )
-					: ( provider.slug === 'musicfetch' ? __( 'Optional Paid Key', 'mds-audio-providers' ) : __( 'Needs API Key', 'mds-audio-providers' ) );
+			if ( provider.slug === 'local' ) {
+				return __( 'Core · Local', 'mds-audio-providers' );
 			}
-			if ( provider.slug === 'spotify' ) {
-				const cred = credentials.spotify;
-				const embedEnabled = ! providerOptions.spotify || providerOptions.spotify.embed_fallback !== false;
-				if ( cred && cred.configured ) {
-					return __( 'Configured', 'mds-audio-providers' );
-				}
-				return embedEnabled
-					? __( 'Embed Only', 'mds-audio-providers' )
-					: __( 'Needs API Key', 'mds-audio-providers' );
+			const minTier = providerTiers[ provider.slug ] || 'free';
+			if ( ! license.activated ) {
+				return __( 'Needs License', 'mds-audio-providers' );
 			}
-			if ( provider.slug === 'tidal' ) {
-				const cred = credentials.tidal;
-				return cred && cred.configured
-					? __( 'UPC + Embed', 'mds-audio-providers' )
-					: __( 'URL Embed', 'mds-audio-providers' );
+			if ( ! hasTier( minTier ) ) {
+				return __( 'Requires Pro', 'mds-audio-providers' );
 			}
 			if ( provider.slug === 'funkwhale' ) {
 				const cred = credentials.funkwhale;
 				return cred && cred.configured
-					? __( 'Pod Configured', 'mds-audio-providers' )
-					: __( 'Self-Hosted', 'mds-audio-providers' );
+					? __( 'Pro · Pod Configured', 'mds-audio-providers' )
+					: __( 'Pro · Local Pod', 'mds-audio-providers' );
 			}
-			if ( provider.slug === 'mixcloud' || provider.slug === 'audiomack' ) {
-				return __( 'Zero-Auth Embed', 'mds-audio-providers' );
-			}
-			return __( 'Zero-Auth', 'mds-audio-providers' );
+			return minTier === 'pro'
+				? __( 'Pro · Gateway', 'mds-audio-providers' )
+				: __( 'Free · Gateway', 'mds-audio-providers' );
 		};
+
+		const renderLicensePanel = () =>
+			el(
+				PanelBody,
+				{
+					title: __( 'MDS Cloud Gateway License', 'mds-audio-providers' ),
+					initialOpen: ! license.activated,
+				},
+				el( SectionInfo, {
+					title: license.activated
+						? __( 'Connected to MDS Cloud Gateway', 'mds-audio-providers' ) + ' — ' + ( license.tier_label || license.tier )
+						: __( 'Activate Your Free or Pro MDS License', 'mds-audio-providers' ),
+					summary: license.activated
+						? __( 'Active Key: ', 'mds-audio-providers' ) + license.key_masked + ' · ' + __( 'Endpoint: ', 'mds-audio-providers' ) + license.api_base_url
+						: __( 'Free-tier keys unlock Apple Music, Deezer, Bandcamp, Audius, Mixcloud, and Audiomack. Pro-tier keys additionally unlock Spotify, SoundCloud, TIDAL, Jamendo, Musicfetch, and private Funkwhale pods with zero API key setup.', 'mds-audio-providers' ),
+				} ),
+				licenseError &&
+					el(
+						'div',
+						{ style: { marginTop: '12px' } },
+						el(
+							Notice,
+							{
+								status: 'error',
+								isDismissible: true,
+								onRemove: () => setLicenseError( '' ),
+							},
+							licenseError
+						)
+					),
+				license.activated
+					? el(
+						'div',
+						{ style: { marginTop: '12px' } },
+						el(
+							Button,
+							{
+								variant: 'secondary',
+								isDestructive: true,
+								isBusy: licenseBusy,
+								disabled: licenseBusy,
+								onClick: deactivateLicense,
+							},
+							__( 'Deactivate License', 'mds-audio-providers' )
+						)
+					)
+					: el(
+						'div',
+						{ className: 'mds-style-grid-2col', style: { marginTop: '12px', alignItems: 'end' } },
+						el( TextControl, {
+							label: __( 'MDS License Key', 'mds-audio-providers' ),
+							value: licenseInput,
+							placeholder: 'MDS-FREE-XXXX-XXXX-XXXX-XXXX or MDS-PRO-...',
+							onChange: setLicenseInput,
+							__next40pxDefaultSize: true,
+							__nextHasNoMarginBottom: true,
+						} ),
+						el(
+							'div',
+							null,
+							el(
+								Button,
+								{
+									variant: 'primary',
+									isBusy: licenseBusy,
+									disabled: licenseBusy,
+									onClick: activateLicense,
+								},
+								__( 'Activate License', 'mds-audio-providers' )
+							)
+						)
+					)
+			);
 
 		const renderProviderDrawer = ( provider ) => {
 			const slug = provider.slug;
@@ -310,9 +383,8 @@
 			const isSp = slug === 'spotify';
 			const hasEmbedToggle = slug === 'spotify' || slug === 'bandcamp';
 			const embedChecked = ! providerOptions[ slug ] || providerOptions[ slug ].embed_fallback !== false;
-			const cred = credentials[ slug ];
-			const credConfig = CREDENTIAL_CONFIGS[ slug ] || null;
-			const inputState = credInputs[ slug ] || { client_id: '', client_secret: '' };
+			const isFunkwhale = slug === 'funkwhale';
+			const fwCred = credentials.funkwhale || {};
 
 			return el(
 				Fragment,
@@ -325,42 +397,40 @@
 						el( ToggleControl, {
 							label: __( 'Allow iframe embed fallback', 'mds-audio-providers' ),
 							help: isSp
-								? __( 'When enabled, renders the official Spotify embed player if native preview_url tracks are unavailable (or when a Spotify URL is present without API keys).', 'mds-audio-providers' )
+								? __( 'When enabled, renders the official Spotify embed player if native preview_url tracks are unavailable.', 'mds-audio-providers' )
 								: __( 'When enabled, falls back to Bandcamp’s official EmbeddedPlayer iframe if direct track streams cannot be resolved.', 'mds-audio-providers' ),
 							checked: embedChecked,
 							onChange: ( val ) => toggleProviderOption( slug, 'embed_fallback', val ),
 							__nextHasNoMarginBottom: true,
 						} )
 					),
-				credConfig &&
+				isFunkwhale &&
 					el(
 						'div',
 						{ className: 'mds-style-grid-2col', style: { marginTop: '12px' } },
-						cred && cred.configured &&
+						fwCred.configured &&
 							el(
 								'p',
 								{ className: 'description', style: { gridColumn: '1 / -1', margin: 0 } },
-								__( 'Active Key: ', 'mds-audio-providers' ) + cred.client_id_masked + ' (' + cred.source + ')'
+								__( 'Active Pod: ', 'mds-audio-providers' ) + fwCred.client_id_masked + ' (' + fwCred.source + ')'
 							),
-						credConfig.hasId &&
-							el( TextControl, {
-								label: credConfig.idLabel,
-								value: inputState.client_id,
-								placeholder: cred && cred.configured ? __( 'Leave blank to keep existing', 'mds-audio-providers' ) : '',
-								onChange: ( val ) => updateCredInput( slug, 'client_id', val ),
-								__next40pxDefaultSize: true,
-								__nextHasNoMarginBottom: true,
-							} ),
-						credConfig.hasSecret &&
-							el( TextControl, {
-								label: credConfig.secretLabel,
-								type: 'password',
-								value: inputState.client_secret,
-								placeholder: cred && cred.configured ? __( 'Leave blank to keep existing', 'mds-audio-providers' ) : '',
-								onChange: ( val ) => updateCredInput( slug, 'client_secret', val ),
-								__next40pxDefaultSize: true,
-								__nextHasNoMarginBottom: true,
-							} ),
+						el( TextControl, {
+							label: __( 'Funkwhale Pod Base URL (optional)', 'mds-audio-providers' ),
+							value: fwInput.client_id,
+							placeholder: fwCred.configured ? __( 'Leave blank to keep existing', 'mds-audio-providers' ) : 'https://open.audio',
+							onChange: ( val ) => setFwInput( ( prev ) => Object.assign( {}, prev, { client_id: val } ) ),
+							__next40pxDefaultSize: true,
+							__nextHasNoMarginBottom: true,
+						} ),
+						el( TextControl, {
+							label: __( 'Funkwhale Bearer Token (optional, private pods)', 'mds-audio-providers' ),
+							type: 'password',
+							value: fwInput.client_secret,
+							placeholder: fwCred.configured ? __( 'Leave blank to keep existing', 'mds-audio-providers' ) : '',
+							onChange: ( val ) => setFwInput( ( prev ) => Object.assign( {}, prev, { client_secret: val } ) ),
+							__next40pxDefaultSize: true,
+							__nextHasNoMarginBottom: true,
+						} ),
 						el(
 							'div',
 							{ style: { gridColumn: '1 / -1' } },
@@ -368,11 +438,11 @@
 								Button,
 								{
 									variant: 'secondary',
-									isBusy: testing === slug,
+									isBusy: testing === 'funkwhale',
 									disabled: testing !== '',
-									onClick: () => testProvider( slug ),
+									onClick: testFunkwhale,
 								},
-								credConfig.testLabel
+								__( 'Test Funkwhale Pod Connection', 'mds-audio-providers' )
 							)
 						)
 					)
@@ -389,12 +459,13 @@
 						{ status: 'warning', isDismissible: false },
 						__( 'MDS Release Manager (1.2.0+) with the Unified Audio API is required.', 'mds-audio-providers' )
 					),
+				renderLicensePanel(),
 				el(
 					PanelBody,
-					{ title: __( 'Provider Priority & API Credentials', 'mds-audio-providers' ), initialOpen: true },
+					{ title: __( 'Provider Priority & Tier Status', 'mds-audio-providers' ), initialOpen: true },
 					el( SectionInfo, {
 						title: __( 'About Unified Audio Providers', 'mds-audio-providers' ),
-						summary: __( 'Providers are tried top-to-bottom until one returns a playable preview. Apple Music, Deezer, and Spotify resolve automatically by Release UPC/EAN. Click Customize on SoundCloud or Spotify to configure API keys and test connections.', 'mds-audio-providers' ),
+						summary: __( 'Providers are tried top-to-bottom until one returns a playable preview. All cloud providers are resolved centrally via MDS Cloud Gateway with zero customer API keys required.', 'mds-audio-providers' ),
 						inheritance: __( 'Powers the Unified Release Player block, [release-player] shortcode, and Release Links audio slot.', 'mds-audio-providers' ),
 					} ),
 					el(
@@ -456,7 +527,7 @@
 				{ title: __( 'Provider Transient Cache', 'mds-audio-providers' ), initialOpen: true },
 				el( SectionInfo, {
 					title: __( 'About Audio Provider Caching', 'mds-audio-providers' ),
-					summary: __( 'Provider manifests are cached selectively in WordPress transients respecting each service’s stream TTL (15–30 minutes for signed streams; 12 hours for UPC lookups). Clearing this cache also notifies MDS Release Manager’s Cache Manager.', 'mds-audio-providers' ),
+					summary: __( 'Provider manifests are cached locally in WordPress transients respecting each service’s stream TTL (15–30 minutes for signed streams; 12 hours for UPC lookups) and also cached across sites on MDS Cloud Gateway.', 'mds-audio-providers' ),
 				} ),
 				el(
 					'p',
@@ -486,7 +557,7 @@
 			! isEmbeddedTab && el( 'h1', null, __( 'MDS Audio Providers', 'mds-audio-providers' ) ),
 			el( TabPanel, {
 				tabs: [
-					{ name: 'providers', title: __( 'Providers & API Keys', 'mds-audio-providers' ) },
+					{ name: 'providers', title: __( 'License & Providers', 'mds-audio-providers' ) },
 					{ name: 'cache', title: __( 'Cache & Diagnostics', 'mds-audio-providers' ) },
 				],
 				children: ( tab ) => ( tab.name === 'cache' ? renderCacheTab() : renderProvidersTab() ),

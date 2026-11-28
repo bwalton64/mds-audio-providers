@@ -16,6 +16,7 @@ namespace MDS\AudioProviders\Providers;
 
 use MDS\AudioProviders\Core\Cache;
 use MDS\AudioProviders\Core\Logging;
+use MDS\AudioProviders\Gateway\GatewayBridge;
 use MDS\ReleaseManager\Core\Audio\AudioProviderInterface;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -58,12 +59,15 @@ final class FunkwhaleProvider implements AudioProviderInterface {
 	}
 
 	/**
-	 * Checks whether the release has a valid Funkwhale album or track URL.
+	 * Checks whether a Pro+ license is active and the release has a valid Funkwhale URL.
 	 *
 	 * @param int $post_id Release post ID.
-	 * @return bool True when a valid Funkwhale URL exists.
+	 * @return bool True when Pro+ license and a valid Funkwhale URL exist.
 	 */
 	public function supports_release( int $post_id ): bool {
+		if ( ! GatewayBridge::has_tier( 'pro' ) ) {
+			return false;
+		}
 		return null !== self::get_funkwhale_target( $post_id );
 	}
 
@@ -75,6 +79,9 @@ final class FunkwhaleProvider implements AudioProviderInterface {
 	 * @return array<string, mixed>|null Raw manifest array, or null.
 	 */
 	public function resolve( int $post_id, array $context = array() ): ?array {
+		if ( ! GatewayBridge::has_tier( 'pro' ) ) {
+			return null;
+		}
 		$target = self::get_funkwhale_target( $post_id );
 		if ( null === $target ) {
 			return null;

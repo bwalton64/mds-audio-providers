@@ -7,7 +7,7 @@
  * Requires at least: 7.0
  * Requires PHP: 8.0
  * Requires Plugins: mds-release-manager
- * Update URI: https://github.com/bwalton64/mds-audio-providers
+ * Update URI: https://api.mustydungeon.com
  * Text Domain: mds-audio-providers
  * Author: Musty Dungeon Studios
  * Author URI: https://mustydungeon.com
@@ -74,31 +74,16 @@ if ( class_exists( \MDS\AudioProviders\Providers\ProviderRegistry::class ) ) {
 	\MDS\AudioProviders\Admin\Admin::register_hooks();
 	\MDS\AudioProviders\Admin\AdminInterface::register_hooks();
 	\MDS\AudioProviders\Api\RestApi::register_hooks();
+	if ( class_exists( \MDS\AudioProviders\Api\Abilities::class ) ) {
+		\MDS\AudioProviders\Api\Abilities::register_hooks();
+	}
 }
 
 add_action(
 	'mds_rm_loaded',
 	static function (): void {
-		// Never overwrite a local Git development checkout via WordPress auto-updates.
-		if ( is_dir( MDS_AP_PATH . '.git' ) ) {
-			return;
-		}
-		if ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) ) {
-			\MDS\ReleaseManager\Api\ExtensionApi::register_github_updater(
-				array(
-					'basename'       => MDS_AP_BASENAME,
-					'slug'           => 'mds-audio-providers',
-					'repo'           => 'bwalton64/mds-audio-providers',
-					'version'        => MDS_AP_VERSION,
-					'name'           => 'MDS Audio Providers',
-					'author'         => 'Musty Dungeon Studios',
-					'homepage'       => 'https://mustydungeon.com',
-					'token_constant' => 'MDS_AP_GITHUB_TOKEN',
-					'requires'       => '7.0',
-					'tested'         => '7.0',
-					'requires_php'   => '8.0',
-				)
-			);
+		if ( class_exists( \MDS\AudioProviders\Gateway\GatewayBridge::class ) ) {
+			\MDS\AudioProviders\Gateway\GatewayBridge::register_updater();
 		}
 	}
 );

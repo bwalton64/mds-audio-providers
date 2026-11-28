@@ -34,9 +34,10 @@
 		<exclude name="WordPress.Files.FileName.NotHyphenatedLowercase"/>
 	</rule>
 
-	<!-- Enforce WPCS lowercase hyphenated filenames outside src/ (root & procedural files) -->
+	<!-- Enforce WPCS lowercase hyphenated filenames outside src/ and server/ -->
 	<rule ref="WordPress.Files.FileName">
 		<exclude-pattern>/src/*</exclude-pattern>
+		<exclude-pattern>/server/*</exclude-pattern>
 	</rule>
 
 	<!-- Enforce PHP 8.0+ compatibility -->

@@ -1,6 +1,7 @@
 <?php
 /**
- * REST API endpoints for MDS Audio Providers settings, connection testing, and cache management.
+ * REST API endpoints for MDS Audio Providers settings, license activation,
+ * Funkwhale connection testing, and cache management.
  *
  * @package MDS\AudioProviders
  * @since   2.0.0
@@ -11,14 +12,10 @@ declare(strict_types=1);
 namespace MDS\AudioProviders\Api;
 
 use MDS\AudioProviders\Core\Cache;
+use MDS\AudioProviders\Gateway\GatewayBridge;
 use MDS\AudioProviders\Providers\Credentials;
 use MDS\AudioProviders\Providers\FunkwhaleProvider;
-use MDS\AudioProviders\Providers\JamendoProvider;
-use MDS\AudioProviders\Providers\MusicfetchProvider;
 use MDS\AudioProviders\Providers\ProviderOptions;
-use MDS\AudioProviders\Providers\SoundCloudProvider;
-use MDS\AudioProviders\Providers\SpotifyProvider;
-use MDS\AudioProviders\Providers\TidalProvider;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -77,6 +74,26 @@ final class RestApi {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/license/activate',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( self::class, 'activate_license' ),
+				'permission_callback' => $admin_check,
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/license/deactivate',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( self::class, 'deactivate_license' ),
+				'permission_callback' => $admin_check,
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/test-connection',
 			array(
 				'methods'             => 'POST',
@@ -103,7 +120,7 @@ final class RestApi {
 	}
 
 	/**
-	 * Returns current provider priority, enabled states, masked credentials, and cache summary.
+	 * Returns current provider priority, enabled states, license status, masked credentials, and cache summary.
 	 *
 	 * @return WP_REST_Response
 	 */
@@ -112,7 +129,7 @@ final class RestApi {
 	}
 
 	/**
-	 * Saves provider priority, disabled list, and optional API credentials.
+	 * Saves provider priority, disabled list, Funkwhale pod credentials, and embed-fallback toggles.
 	 *
 	 * @param WP_REST_Request $request Incoming REST request.
 	 * @return WP_REST_Response|WP_Error
@@ -133,18 +150,13 @@ final class RestApi {
 			update_option( 'mds_rm_audio_disabled_providers', $clean_disabled, false );
 		}
 
-		if ( isset( $params['credentials'] ) && is_array( $params['credentials'] ) ) {
-			foreach ( array( 'soundcloud', 'spotify', 'tidal', 'jamendo', 'funkwhale', 'musicfetch' ) as $slug ) {
-				if ( ! isset( $params['credentials'][ $slug ] ) || ! is_array( $params['credentials'][ $slug ] ) ) {
-					continue;
-				}
-				$entry = $params['credentials'][ $slug ];
-				$clear = ! empty( $entry['clear'] );
-				$cid   = isset( $entry['client_id'] ) && is_string( $entry['client_id'] ) ? $entry['client_id'] : '';
-				$sec   = isset( $entry['client_secret'] ) && is_string( $entry['client_secret'] ) ? $entry['client_secret'] : '';
-				if ( $clear || '' !== trim( $cid ) || '' !== trim( $sec ) ) {
-					Credentials::save( $slug, $cid, $sec, $clear );
-				}
+		if ( isset( $params['credentials']['funkwhale'] ) && is_array( $params['credentials']['funkwhale'] ) ) {
+			$entry = $params['credentials']['funkwhale'];
+			$clear = ! empty( $entry['clear'] );
+			$cid   = isset( $entry['client_id'] ) && is_string( $entry['client_id'] ) ? $entry['client_id'] : '';
+			$sec   = isset( $entry['client_secret'] ) && is_string( $entry['client_secret'] ) ? $entry['client_secret'] : '';
+			if ( $clear || '' !== trim( $cid ) || '' !== trim( $sec ) ) {
+				Credentials::save( 'funkwhale', $cid, $sec, $clear );
 			}
 		}
 
@@ -152,14 +164,7 @@ final class RestApi {
 			ProviderOptions::save_all( $params['provider_options'] );
 		}
 
-		if ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) && method_exists( \MDS\ReleaseManager\Api\ExtensionApi::class, 'reset_audio_cache' ) ) {
-			\MDS\ReleaseManager\Api\ExtensionApi::reset_audio_cache();
-		} elseif ( class_exists( '\\MDS\\ReleaseManager\\Core\\Audio\\AudioApi' ) ) {
-			\MDS\ReleaseManager\Core\Audio\AudioApi::reset_cache();
-		}
-
-		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Invoking MDS Release Manager core cache purge hook.
-		do_action( 'mds_rm_purge_cache', 'audio_providers_settings' );
+		self::purge_core_audio_caches( 'audio_providers_settings' );
 
 		return new WP_REST_Response(
 			array_merge(
@@ -174,29 +179,80 @@ final class RestApi {
 	}
 
 	/**
-	 * Tests OAuth credentials for SoundCloud or Spotify.
+	 * Activates a site license key against MDS Cloud Gateway.
+	 *
+	 * @param WP_REST_Request $request Incoming REST request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public static function activate_license( WP_REST_Request $request ): WP_REST_Response|WP_Error {
+		$params = $request->get_json_params();
+		$key    = is_array( $params ) && isset( $params['license_key'] ) && is_string( $params['license_key'] )
+			? sanitize_text_field( $params['license_key'] )
+			: '';
+
+		if ( '' === trim( $key ) ) {
+			return new WP_Error( 'mds_ap_missing_license', __( 'Enter an MDS license key to activate.', 'mds-audio-providers' ), array( 'status' => 400 ) );
+		}
+
+		$result = GatewayBridge::activate( $key );
+		if ( empty( $result['ok'] ) ) {
+			return new WP_Error(
+				'mds_ap_activation_failed',
+				(string) ( $result['error'] ?? __( 'License activation failed.', 'mds-audio-providers' ) ),
+				array( 'status' => 400 )
+			);
+		}
+
+		Cache::clear_all( false );
+		self::purge_core_audio_caches( 'audio_providers_license_activate' );
+
+		return new WP_REST_Response(
+			array_merge(
+				self::build_payload(),
+				array(
+					'ok'      => true,
+					'message' => __( 'MDS Cloud Gateway license activated.', 'mds-audio-providers' ),
+				)
+			),
+			200
+		);
+	}
+
+	/**
+	 * Deactivates the site license and clears local tokens.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public static function deactivate_license(): WP_REST_Response {
+		GatewayBridge::deactivate();
+		Cache::clear_all( false );
+		self::purge_core_audio_caches( 'audio_providers_license_deactivate' );
+
+		return new WP_REST_Response(
+			array_merge(
+				self::build_payload(),
+				array(
+					'ok'      => true,
+					'message' => __( 'MDS Cloud Gateway license deactivated.', 'mds-audio-providers' ),
+				)
+			),
+			200
+		);
+	}
+
+	/**
+	 * Tests local Funkwhale pod connectivity.
 	 *
 	 * @param WP_REST_Request $request Incoming REST request.
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public static function test_connection( WP_REST_Request $request ): WP_REST_Response|WP_Error {
 		$provider = sanitize_key( (string) $request->get_param( 'provider' ) );
-
-		$result = match ( $provider ) {
-			'soundcloud' => SoundCloudProvider::test_connection(),
-			'spotify'    => SpotifyProvider::test_connection(),
-			'tidal'      => TidalProvider::test_connection(),
-			'jamendo'    => JamendoProvider::test_connection(),
-			'funkwhale'  => FunkwhaleProvider::test_connection(),
-			'musicfetch' => MusicfetchProvider::test_connection(),
-			default      => new WP_Error( 'mds_ap_unknown_provider', __( 'Unsupported provider for connection testing.', 'mds-audio-providers' ), array( 'status' => 400 ) ),
-		};
-
-		if ( is_wp_error( $result ) ) {
-			return $result;
+		if ( 'funkwhale' !== $provider ) {
+			return new WP_Error( 'mds_ap_unknown_provider', __( 'Connection testing is only needed for local Funkwhale pods.', 'mds-audio-providers' ), array( 'status' => 400 ) );
 		}
 
-		return new WP_REST_Response( $result, 200 );
+		return new WP_REST_Response( FunkwhaleProvider::test_connection(), 200 );
 	}
 
 	/**
@@ -232,9 +288,28 @@ final class RestApi {
 
 		return array(
 			'providers'        => $providers,
+			'provider_tiers'   => GatewayBridge::PROVIDER_TIERS,
+			'license'          => GatewayBridge::get_status(),
 			'credentials'      => Credentials::get_masked_status(),
 			'provider_options' => ProviderOptions::get_all(),
 			'cache'            => Cache::get_summary(),
 		);
+	}
+
+	/**
+	 * Resets Core's Unified Audio API cache and notifies Cache Manager.
+	 *
+	 * @param string $reason Purge reason tag.
+	 * @return void
+	 */
+	private static function purge_core_audio_caches( string $reason ): void {
+		if ( class_exists( \MDS\ReleaseManager\Api\ExtensionApi::class ) && method_exists( \MDS\ReleaseManager\Api\ExtensionApi::class, 'reset_audio_cache' ) ) {
+			\MDS\ReleaseManager\Api\ExtensionApi::reset_audio_cache();
+		} elseif ( class_exists( '\\MDS\\ReleaseManager\\Core\\Audio\\AudioApi' ) ) {
+			\MDS\ReleaseManager\Core\Audio\AudioApi::reset_cache();
+		}
+
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- Invoking MDS Release Manager core cache purge hook.
+		do_action( 'mds_rm_purge_cache', $reason );
 	}
 }

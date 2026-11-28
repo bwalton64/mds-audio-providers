@@ -1,7 +1,7 @@
 <?php
 /**
- * Release meta box, Bandcamp URL verification, "Use Bandcamp URL" Commerce button,
- * and SoundCloud URL field for MDS Audio Providers.
+ * Release meta box, Bandcamp URL verification (via MDS Cloud Gateway),
+ * and "Use Bandcamp URL" Commerce button for MDS Audio Providers.
  *
  * @package MDS\AudioProviders
  * @since   2.0.0
@@ -11,18 +11,11 @@ declare(strict_types=1);
 
 namespace MDS\AudioProviders\Admin;
 
-use DOMDocument;
-use DOMNode;
 use MDS\AudioProviders\Core\Cache;
 use MDS\AudioProviders\Core\Dependencies;
-use MDS\AudioProviders\Providers\AudiomackProvider;
-use MDS\AudioProviders\Providers\AudiusProvider;
-use MDS\AudioProviders\Providers\BandcampProvider;
+use MDS\AudioProviders\Gateway\GatewayBridge;
 use MDS\AudioProviders\Providers\FunkwhaleProvider;
-use MDS\AudioProviders\Providers\JamendoProvider;
-use MDS\AudioProviders\Providers\MixcloudProvider;
-use MDS\AudioProviders\Providers\SoundCloudProvider;
-use MDS\AudioProviders\Providers\TidalProvider;
+use MDS\AudioProviders\Providers\ReleaseMeta;
 use WP_Post;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -40,7 +33,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 final class Admin {
 
 	/**
-	 * Registers metabox, save, media-format, and AJAX verification hooks.
+	 * Registers metabox, save, Buy Now button, and AJAX verification hooks.
 	 *
 	 * @return void
 	 */
@@ -48,25 +41,8 @@ final class Admin {
 		add_action( 'mds_rm_register_custom_meta_boxes', array( self::class, 'register_meta_box' ) );
 		add_action( 'mds_rm_save_release_meta', array( self::class, 'save_release_meta' ), 10, 2 );
 		add_action( 'mds_rm_after_buy_now_field', array( self::class, 'render_buy_now_button' ) );
-		add_filter( 'mds_rm_default_media_formats', array( self::class, 'register_default_media_formats' ) );
 		add_action( 'admin_enqueue_scripts', array( self::class, 'enqueue_metabox_assets' ) );
 		add_action( 'wp_ajax_mds_bc_verify_url', array( self::class, 'ajax_verify_url' ) );
-	}
-
-	/**
-	 * Registers the "Digital Download" default media format with Core.
-	 *
-	 * @param array<string, array{label: string, icon: string}> $formats Default media format registry.
-	 * @return array<string, array{label: string, icon: string}> Updated registry.
-	 */
-	public static function register_default_media_formats( array $formats ): array {
-		if ( ! isset( $formats['digital-download'] ) ) {
-			$formats['digital-download'] = array(
-				'label' => __( 'Digital Download', 'mds-audio-providers' ),
-				'icon'  => 'fas fa-download',
-			);
-		}
-		return $formats;
 	}
 
 	/**
@@ -140,15 +116,15 @@ final class Admin {
 		$mc_enabled     = self::is_provider_enabled( 'mixcloud' );
 		$am_enabled     = self::is_provider_enabled( 'audiomack' );
 
-		$bc_url         = BandcampProvider::get_album_url( $post_id );
-		$bc_album_id    = BandcampProvider::get_album_id( $post_id );
-		$soundcloud_url = SoundCloudProvider::get_soundcloud_url( $post_id );
-		$audius_url     = AudiusProvider::get_audius_url( $post_id );
-		$jamendo_url    = JamendoProvider::get_jamendo_url( $post_id );
+		$bc_url         = ReleaseMeta::get_bandcamp_album_url( $post_id );
+		$bc_album_id    = ReleaseMeta::get_bandcamp_album_id( $post_id );
+		$soundcloud_url = ReleaseMeta::get_soundcloud_url( $post_id );
+		$audius_url     = ReleaseMeta::get_audius_url( $post_id );
+		$jamendo_url    = ReleaseMeta::get_jamendo_url( $post_id );
 		$funkwhale_url  = FunkwhaleProvider::get_funkwhale_url( $post_id );
-		$tidal_url      = TidalProvider::get_tidal_url( $post_id );
-		$mixcloud_url   = MixcloudProvider::get_mixcloud_url( $post_id );
-		$audiomack_url  = AudiomackProvider::get_audiomack_url( $post_id );
+		$tidal_url      = ReleaseMeta::get_tidal_url( $post_id );
+		$mixcloud_url   = ReleaseMeta::get_mixcloud_url( $post_id );
+		$audiomack_url  = ReleaseMeta::get_audiomack_url( $post_id );
 
 		wp_nonce_field( 'mds_ap_save_release', 'mds_ap_nonce' );
 		?>
@@ -158,7 +134,7 @@ final class Admin {
 				<div class="mds-section-info__body">
 					<strong class="mds-section-info__title"><?php esc_html_e( 'Automatic & Provider-Specific Audio Sources', 'mds-audio-providers' ); ?></strong>
 					<p class="mds-section-info__summary">
-						<?php esc_html_e( 'Apple Music, Deezer, Spotify, and TIDAL resolve automatically from this Release’s Barcode (UPC/EAN). Only enabled URL-based providers are shown below; matching URLs from Release Links are also detected automatically.', 'mds-audio-providers' ); ?>
+						<?php esc_html_e( 'Apple Music, Deezer, Spotify, TIDAL, and Musicfetch resolve automatically from this Release’s Barcode (UPC/EAN) via MDS Cloud Gateway. Only enabled URL-based providers are shown below; matching URLs from Release Links are also detected automatically.', 'mds-audio-providers' ); ?>
 					</p>
 				</div>
 			</div>
@@ -196,7 +172,7 @@ final class Admin {
 							placeholder="<?php esc_attr_e( 'e.g. 3456789012', 'mds-audio-providers' ); ?>"
 						/>
 						<p class="mds-style-field__help">
-							<?php esc_html_e( 'Populated automatically by Verify URL. If your web host is blocked by Bandcamp, paste Bandcamp’s Share/Embed code into the URL field or enter the numeric album ID manually.', 'mds-audio-providers' ); ?>
+							<?php esc_html_e( 'Populated automatically by Verify URL via MDS Cloud Gateway. You can also paste Bandcamp’s Share/Embed code into the URL field or enter the numeric album ID manually.', 'mds-audio-providers' ); ?>
 						</p>
 					</div>
 				</div>
@@ -217,7 +193,7 @@ final class Admin {
 						placeholder="https://audius.co/artist/album/release-name"
 					/>
 					<p class="mds-style-field__help">
-						<?php esc_html_e( 'Optional. Resolves native 320kbps HTML5 audio streams via the Audius Open Audio Protocol (zero API keys required).', 'mds-audio-providers' ); ?>
+						<?php esc_html_e( 'Optional. Included in the Free tier via MDS Cloud Gateway (zero API keys required).', 'mds-audio-providers' ); ?>
 					</p>
 				</div>
 			</div>
@@ -237,7 +213,7 @@ final class Admin {
 						placeholder="https://soundcloud.com/artist/track-or-set"
 					/>
 					<p class="mds-style-field__help">
-						<?php esc_html_e( 'Optional. Requires SoundCloud API credentials under Releases → Settings → Audio Providers.', 'mds-audio-providers' ); ?>
+						<?php esc_html_e( 'Optional (MDS Pro). Resolved via MDS Cloud Gateway with zero customer API keys required.', 'mds-audio-providers' ); ?>
 					</p>
 				</div>
 			</div>
@@ -257,7 +233,7 @@ final class Admin {
 						placeholder="https://www.jamendo.com/album/123456/release-name"
 					/>
 					<p class="mds-style-field__help">
-						<?php esc_html_e( 'Optional. Resolves native MP3 streams via Jamendo API v3.0 (requires a free Jamendo Client ID in Audio Providers settings).', 'mds-audio-providers' ); ?>
+						<?php esc_html_e( 'Optional (MDS Pro). Resolves native MP3 streams via MDS Cloud Gateway.', 'mds-audio-providers' ); ?>
 					</p>
 				</div>
 			</div>
@@ -277,7 +253,7 @@ final class Admin {
 						placeholder="https://open.audio/library/albums/12345"
 					/>
 					<p class="mds-style-field__help">
-						<?php esc_html_e( 'Optional. Resolves native HTML5 audio streams directly from any public or authenticated Funkwhale pod.', 'mds-audio-providers' ); ?>
+						<?php esc_html_e( 'Optional (MDS Pro). Resolves native HTML5 audio streams directly from your public or private Funkwhale pod.', 'mds-audio-providers' ); ?>
 					</p>
 				</div>
 			</div>
@@ -297,7 +273,7 @@ final class Admin {
 						placeholder="https://tidal.com/browse/album/123456789"
 					/>
 					<p class="mds-style-field__help">
-						<?php esc_html_e( 'Optional. TIDAL also resolves automatically by Barcode (UPC/EAN) when TIDAL OAuth credentials are configured.', 'mds-audio-providers' ); ?>
+						<?php esc_html_e( 'Optional (MDS Pro). TIDAL also resolves automatically by Barcode (UPC/EAN) via MDS Cloud Gateway.', 'mds-audio-providers' ); ?>
 					</p>
 				</div>
 			</div>
@@ -317,7 +293,7 @@ final class Admin {
 						placeholder="https://www.mixcloud.com/artist/show-name/"
 					/>
 					<p class="mds-style-field__help">
-						<?php esc_html_e( 'Optional. Renders the official Mixcloud embed widget for DJ mixes and radio shows (zero API keys required).', 'mds-audio-providers' ); ?>
+						<?php esc_html_e( 'Optional. Included in the Free tier via MDS Cloud Gateway.', 'mds-audio-providers' ); ?>
 					</p>
 				</div>
 			</div>
@@ -337,7 +313,7 @@ final class Admin {
 						placeholder="https://audiomack.com/artist/album/release-name"
 					/>
 					<p class="mds-style-field__help">
-						<?php esc_html_e( 'Optional. Renders the official Audiomack embed player (zero API keys required).', 'mds-audio-providers' ); ?>
+						<?php esc_html_e( 'Optional. Included in the Free tier via MDS Cloud Gateway.', 'mds-audio-providers' ); ?>
 					</p>
 				</div>
 			</div>
@@ -382,7 +358,8 @@ final class Admin {
 				);
 				update_post_meta( $post_id, 'bandcamp_album_id', (string) $album_id );
 				update_post_meta( $post_id, 'bandcamp_album_url', $bc_url );
-				Cache::delete( 'bandcamp', (string) $album_id );
+				Cache::delete( 'bandcamp', (string) $album_id . ':embed' );
+				Cache::delete( 'bandcamp', (string) $album_id . ':native' );
 			} else {
 				delete_post_meta( $post_id, 'mds_bandcamp_integration' );
 				delete_post_meta( $post_id, 'bandcamp_album_id' );
@@ -406,7 +383,6 @@ final class Admin {
 				continue;
 			}
 
-			// Invalidate any previously cached entry for this provider before updating meta.
 			self::invalidate_provider_url_cache( $post_id, $provider_slug );
 
 			$url = esc_url_raw( wp_unslash( (string) $_POST[ $meta_key ] ) );
@@ -428,14 +404,14 @@ final class Admin {
 	 */
 	private static function invalidate_provider_url_cache( int $post_id, string $provider_slug ): void {
 		if ( 'jamendo' === $provider_slug ) {
-			$target = JamendoProvider::get_jamendo_target( $post_id );
+			$target = ReleaseMeta::get_jamendo_target( $post_id );
 			if ( null !== $target ) {
 				Cache::delete( 'jamendo', $target['type'] . ':' . $target['id'] );
 			}
 			return;
 		}
 		if ( 'tidal' === $provider_slug ) {
-			$target = TidalProvider::get_tidal_target( $post_id );
+			$target = ReleaseMeta::get_tidal_target( $post_id );
 			if ( null !== $target ) {
 				Cache::delete( 'tidal', $target['type'] . ':' . $target['id'] );
 			}
@@ -443,11 +419,11 @@ final class Admin {
 		}
 
 		$current_url = match ( $provider_slug ) {
-			'soundcloud' => SoundCloudProvider::get_soundcloud_url( $post_id ),
-			'audius'     => AudiusProvider::get_audius_url( $post_id ),
+			'soundcloud' => ReleaseMeta::get_soundcloud_url( $post_id ),
+			'audius'     => ReleaseMeta::get_audius_url( $post_id ),
 			'funkwhale'  => FunkwhaleProvider::get_funkwhale_url( $post_id ),
-			'mixcloud'   => MixcloudProvider::get_mixcloud_url( $post_id ),
-			'audiomack'  => AudiomackProvider::get_audiomack_url( $post_id ),
+			'mixcloud'   => ReleaseMeta::get_mixcloud_url( $post_id ),
+			'audiomack'  => ReleaseMeta::get_audiomack_url( $post_id ),
 			default      => '',
 		};
 		if ( '' !== $current_url ) {
@@ -497,7 +473,7 @@ final class Admin {
 	}
 
 	/**
-	 * AJAX handler for verifying a Bandcamp Release URL and extracting its Album ID.
+	 * AJAX handler for verifying a Bandcamp Release URL via MDS Cloud Gateway (`audio-bandcamp-verify`).
 	 *
 	 * @return void
 	 */
@@ -514,93 +490,14 @@ final class Admin {
 			wp_send_json_error( array( 'message' => __( 'Invalid URL format.', 'mds-audio-providers' ) ) );
 		}
 
-		$html = BandcampProvider::fetch_page_html( $url );
-		if ( is_array( $html ) && ! empty( $html['error'] ) ) {
-			wp_send_json_error( array( 'message' => $html['message'] ?? __( 'Failed to fetch Bandcamp page.', 'mds-audio-providers' ) ) );
+		$response = GatewayBridge::call_proxy( 'audio-bandcamp-verify', array( 'url' => $url ) );
+		$inner    = isset( $response['data'] ) && is_array( $response['data'] ) ? $response['data'] : $response;
+
+		if ( empty( $response['ok'] ) || empty( $inner['ok'] ) || empty( $inner['album_id'] ) ) {
+			$message = (string) ( $inner['error'] ?? $response['error'] ?? __( 'Could not verify Bandcamp URL via MDS Cloud Gateway.', 'mds-audio-providers' ) );
+			wp_send_json_error( array( 'message' => $message ) );
 		}
 
-		$album_id = self::extract_album_id( (string) $html );
-		if ( ! $album_id || $album_id <= 0 ) {
-			wp_send_json_error( array( 'message' => __( 'Could not find a Bandcamp Album ID on this page.', 'mds-audio-providers' ) ) );
-		}
-
-		wp_send_json_success( array( 'album_id' => $album_id ) );
-	}
-
-	/**
-	 * Extracts the numeric Bandcamp Album ID from page HTML.
-	 *
-	 * @param string $html Bandcamp page HTML.
-	 * @return int|false Positive album ID, or false.
-	 */
-	private static function extract_album_id( string $html ): int|false {
-		if ( '' === $html ) {
-			return false;
-		}
-		if ( preg_match( '/<!--\s*album\s+id\s+(\d+)\s*-->/i', $html, $matches ) ) {
-			return absint( $matches[1] );
-		}
-		if ( preg_match( '/&quot;item_id&quot;\s*:\s*(\d+)/i', $html, $matches ) ) {
-			$id = absint( $matches[1] );
-			if ( $id > 0 ) {
-				return $id;
-			}
-		}
-		if ( preg_match( '/"album_id"\s*:\s*(\d+)/i', $html, $matches ) ) {
-			$id = absint( $matches[1] );
-			if ( $id > 0 ) {
-				return $id;
-			}
-		}
-
-		libxml_use_internal_errors( true );
-		$dom = new DOMDocument();
-		$dom->loadHTML( $html );
-		libxml_use_internal_errors( false );
-
-		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Native DOMDocument property.
-		foreach ( $dom->childNodes as $node ) {
-			$found = self::find_album_id_comment( $node );
-			if ( $found ) {
-				return $found;
-			}
-		}
-
-		foreach ( $dom->getElementsByTagName( 'meta' ) as $meta ) {
-			if ( 'album_id' === $meta->getAttribute( 'name' ) || 'albumId' === $meta->getAttribute( 'property' ) ) {
-				$id = absint( $meta->getAttribute( 'content' ) );
-				if ( $id > 0 ) {
-					return $id;
-				}
-			}
-		}
-
-		return false;
-	}
-
-	/**
-	 * Recursively searches DOM comment nodes for a Bandcamp album ID.
-	 *
-	 * @param DOMNode $node DOM node.
-	 * @return int|false Album ID or false.
-	 */
-	private static function find_album_id_comment( DOMNode $node ): int|false {
-		// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Native DOMNode property.
-		if ( XML_COMMENT_NODE === $node->nodeType && preg_match( '/album\s+id\s+(\d+)/i', (string) $node->nodeValue, $matches ) ) {
-			$id = absint( $matches[1] );
-			if ( $id > 0 ) {
-				return $id;
-			}
-		}
-		if ( $node->hasChildNodes() ) {
-			// phpcs:ignore WordPress.NamingConventions.ValidVariableName.UsedPropertyNotSnakeCase -- Native DOMNode property.
-			foreach ( $node->childNodes as $child ) {
-				$found = self::find_album_id_comment( $child );
-				if ( $found ) {
-					return $found;
-				}
-			}
-		}
-		return false;
+		wp_send_json_success( array( 'album_id' => absint( (string) $inner['album_id'] ) ) );
 	}
 }

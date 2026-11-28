@@ -61,7 +61,7 @@ jobs:
           rm -rf "$STAGE_DIR" dist
           mkdir -p "$STAGE_DIR" dist
 
-          RSYNC_ARGS=(-a --exclude='.git' --exclude='.github' --exclude='.agents' --exclude='.local' --exclude='.vscode' --exclude='tests' --exclude='node_modules' --exclude='dist' --exclude='*.log')
+          RSYNC_ARGS=(-a --exclude='.git' --exclude='.github' --exclude='.agents' --exclude='.local' --exclude='.vscode' --exclude='server' --exclude='tests' --exclude='node_modules' --exclude='dist' --exclude='*.log')
           if [ -f .distignore ]; then
             RSYNC_ARGS+=(--exclude-from=.distignore)
           fi

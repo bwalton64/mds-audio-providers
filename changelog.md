@@ -2,6 +2,18 @@
 
 ## [Unreleased]
 
+### Added
+- Migrated `mds-audio-providers` to a thin-client architecture backed by **MDS Cloud Gateway (`mds-cloud-gateway`)** using the single-codebase `server/bootstrap.php` module (`server/AudioResolver.php`, `server/BandcampScraper.php`, `server/GatewayCredentials.php`) — automatically discovered in LocalWP dev and excluded from customer ZIPs via `.distignore` and `.github/workflows/release.yml`.
+- Bundled `src/Gateway/GatewayClient.php`, `src/Gateway/GatewayBridge.php`, `src/Providers/ReleaseMeta.php`, and `src/Providers/GatewayProxyProvider.php` with Free vs. Pro tier gating:
+  - **Free Tier (`MDS-FREE-...`):** Apple Music, Deezer, Bandcamp (+ server-side `audio-bandcamp-verify`), Audius, Mixcloud, and Audiomack.
+  - **Pro Tier (`MDS-PRO-...`+):** Spotify, SoundCloud, TIDAL, Jamendo, Musicfetch (centrally managed MDS keys, zero customer API key setup), and local `FunkwhaleProvider` for private/self-hosted pods.
+- Added **MDS Cloud Gateway License** activation/deactivation controls and tier status badges to **Release Manager → Settings → Audio Providers** (`POST /mds-ap/v1/license/activate`, `POST /mds-ap/v1/license/deactivate`).
+
+### Changed
+- Switched plugin header `Update URI` to `https://api.mustydungeon.com` using `GatewayBridge::register_updater()` (preserving the `.git` dev-checkout auto-update guard).
+- Simplified `Credentials` to manage only local self-hosted **Funkwhale** pod credentials in Core's Hub `SecretVault` and removed the redundant `mds_rm_default_media_formats` filter (already built into `mds-release-manager` Core).
+- Removed legacy local DSP HTTP provider classes from `src/Providers/` so zero proprietary DSP orchestration or Bandcamp scraping logic ships in customer plugin ZIPs.
+
 ## [2.1.2] - 2026-11-27
 
 ### Changed
